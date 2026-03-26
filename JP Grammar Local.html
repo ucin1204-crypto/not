@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JP Grammar Local</title>
+<script src="js/tailwind.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --c-pink: #fbcfe8; --t-pink: #db2777;
+            --c-blue: #bae6fd; --t-blue: #0284c7;
+            --c-green: #bbf7d0; --t-green: #16a34a;
+            --c-purple: #ddd6fe; --t-purple: #7c3aed;
+            --c-yellow: #fde68a; --t-yellow: #d97706;
+            --c-gray: #e2e8f0; --t-gray: #64748b;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #fdfbf7;
+            color: #475569;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            user-select: none; /* 防止长按选中文本干扰手势 */
+        }
+
+        /* --- 核心布局样式 --- */
+        .char-group {
+            display: inline-flex;
+            flex-direction: column; 
+            align-items: center;       
+            justify-content: flex-end; 
+            vertical-align: bottom;    
+            margin: 0 1px;
+            position: relative;
+            line-height: 1; 
+            pointer-events: none; /* 让点击事件穿透到父级 capsule */
+        }
+
+        .char-base {
+            font-size: clamp(1.8rem, 4vw, 2.5rem); 
+            font-weight: 700;
+            line-height: 1.1;
+            min-height: 1.2em; 
+            display: flex;
+            align-items: flex-end; 
+            white-space: nowrap;   
+        }
+
+        .char-ruby {
+            font-size: 0.5em;      
+            color: #94a3b8;
+            font-weight: 500;
+            line-height: 1.2;
+            margin-bottom: -2px;   
+            width: max-content;    
+            min-width: 100%;       
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        /* --- 胶囊样式 --- */
+        .capsule {
+            display: inline-flex; 
+            align-items: flex-end; 
+            padding: 8px 12px;     
+            margin: 0 4px 16px 4px;
+            border-radius: 16px; 
+            background: rgba(255,255,255,0.7); 
+            backdrop-filter: blur(8px);
+            border-bottom: 4px solid transparent; 
+            transition: all 0.2s ease;
+            cursor: pointer; 
+            position: relative; 
+            z-index: 10; 
+            -webkit-tap-highlight-color: transparent;
+            max-width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .capsule { padding: 10px 14px; margin: 0 6px 20px 6px; border-bottom-width: 5px; }
+            .capsule:hover { background: #fff; transform: translateY(-4px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.1); z-index: 20; }
+        }
+        
+        /* 选中/激活样式 */
+        .capsule.active { background: #fff; transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.15); z-index: 20; border-color: currentColor; }
+        
+        /* 施工模式：选中状态 */
+        .capsule.is-selected {
+            background-color: #4f46e5 !important; 
+            color: white !important;
+            border-color: #4338ca !important;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+            z-index: 50;
+            animation: bounce-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0.9) translateY(0); }
+            50% { transform: scale(1.05) translateY(-6px); }
+            100% { transform: scale(1) translateY(-4px); }
+        }
+
+        .capsule.is-selected .char-base,
+        .capsule.is-selected .char-ruby,
+        .capsule.is-selected .char-group {
+            color: white !important;
+        }
+
+    /* 🌸 中文注释：更精致的微型角标 - 几乎不占空间 */
+        .rel-pin {
+            position: absolute;
+            top: -5px;
+            right: -2px;
+            color: white !important;
+            font-size: 8px;
+            padding: 0px 4px;
+            border-radius: 4px;
+            font-weight: 900;
+            z-index: 30;
+            pointer-events: none;
+            transform: scale(0.8);
+            letter-spacing: -0.2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 🌸 中文注释：解决“弹窗白屏”的显色定义 */
+        .bg-po   { background: #10b981 !important; color: #fff !important; } 
+        .bg-mod  { background: #f59e0b !important; color: #fff !important; } 
+        .bg-comp { background: #8b5cf6 !important; color: #fff !important; } 
+        .bg-subj { background: #ec4899 !important; color: #fff !important; } 
+        .bg-para { background: #64748b !important; color: #fff !important; } 
+
+        /* 🌸 中文注释：核心修改 - 不遮挡文字的“外发光”高亮类 */
+        .glow-po   { border-color: #10b981 !important; box-shadow: 0 0 15px 2px rgba(16, 185, 129, 0.4) !important; }
+        .glow-mod  { border-color: #f59e0b !important; box-shadow: 0 0 15px 2px rgba(245, 158, 11, 0.4) !important; }
+        .glow-comp { border-color: #8b5cf6 !important; box-shadow: 0 0 15px 2px rgba(139, 92, 246, 0.4) !important; }
+        .glow-subj { border-color: #ec4899 !important; box-shadow: 0 0 15px 2px rgba(236, 72, 153, 0.4) !important; }
+        .glow-para { border-color: #64748b !important; box-shadow: 0 0 15px 2px rgba(100, 116, 139, 0.4) !important; }
+
+        .rel-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* 🌸 中文注释：调整逻辑辉光的默认属性，确保不带背景色 */
+        .capsule.logic-link-active {
+            transform: translateY(-4px);
+            background-color: white !important; /* 强制背景为白，不遮挡文字 */
+            z-index: 40;
+        }
+
+/* 🌸 中文注释：练习模式整体布局 - 增加了 padding-top 让重心微微下沉 */
+        #practice-area {
+            height: 100%;
+            display: none; 
+            flex-direction: column;
+            justify-content: center; 
+            padding-top: 10vh; /* 💡 关键：向上方推开 10% 的屏幕高度，实现视觉下沉 */
+            padding-bottom: 120px; /* 增加底部留白，让检查按钮更聚拢 */
+            max-width: 600px; 
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        /* 🌸 中文注释：练习工作区 - 像卡片一样聚拢 */
+        .practice-zone {
+            min-height: 140px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 28px;
+            background: rgba(248, 250, 252, 0.5);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            padding: 20px;
+            gap: 12px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+/* 🌸 中文注释：固定尺寸的练习槽位，确保词块取下后坑位还在 */
+        .slot-container {
+            width: fit-content;
+            min-width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        /* 槽底部的虚线 */
+        .slot-line {
+            position: absolute;
+            bottom: 5px;
+            width: 80%;
+            height: 2px;
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+        /* 词块飞入槽位后，隐藏底部的线 */
+        .slot-container.filled .slot-line {
+            display: none;
+        }
+
+/* 🌸 中文注释：升级版填空框 - 凹陷质感 + 呼吸灯效果 */
+        .cloze-input {
+            border: 2px dashed #e2e8f0; /* 默认虚线边框 */
+            background: #f8fafc; /* 浅灰色凹陷感 */
+            border-radius: 14px; /* 圆角跟胶囊一致 */
+            padding: 4px 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #475569;
+            margin: 0 6px;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); /* 内部阴影制造凹陷感 */
+        }
+
+        /* 鼠标点进去/激活时的状态 */
+        .cloze-input:focus {
+            background: #fff;
+            border: 2px solid #f9a8d4; /* 切换为你喜欢的浅粉色 */
+            box-shadow: 0 0 15px rgba(249, 168, 212, 0.3); /* 粉色呼吸发光 */
+            transform: translateY(-2px); /* 轻微浮起 */
+        }
+        .cloze-input.correct { border-bottom-color: #10b981; background: #ecfdf5; }
+        .cloze-input.wrong { border-bottom-color: #ef4444; background: #fef2f2; }
+
+/* 🌸 中文注释：工作台 2.0 - 分段式逻辑布局 */
+        #floating-toolbar {
+            position: fixed;
+            bottom: env(safe-area-inset-bottom, 25px);
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 6px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px -5px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 100;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            opacity: 0;
+            pointer-events: none;
+            max-width: 95vw;
+        }
+
+        /* 🌸 中文注释：[新增] 控制工具栏显示的样式，解决“点开不出来”的问题 */
+        #floating-toolbar.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 🌸 中文注释：工具栏内部的分隔线 */
+        .toolbar-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(0,0,0,0.08);
+            margin: 0 4px;
+        }
+
+        /* 🌸 中文注释：统一按钮外观，使其更精致 */
+        .tool-btn {
+            height: 38px;
+            padding: 0 12px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 800;
+            transition: all 0.2s;
+            border: none;
+            white-space: nowrap;
+        }
+
+        /* 手机端自动瘦身：只显示图标，隐藏部分文字 */
+        @media (max-width: 640px) {
+            .tool-btn { padding: 0 10px; }
+            .tool-btn span { display: none; } /* 💡 关键：手机上隐藏文字，只留图标 */
+            #floating-toolbar { gap: 2px; padding: 5px; }
+        }
+
+        /* [新增] Toast 提示样式 */
+        #toast-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #334155;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 200;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #toast-message.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 颜色定义 */
+        .type-topic { border-color: var(--c-pink); color: var(--t-pink); }
+        .type-object { border-color: var(--c-blue); color: var(--t-blue); }
+        .type-verb { border-color: var(--c-green); color: var(--t-green); }
+        .type-grammar { border-color: var(--c-purple); color: var(--t-purple); }
+        .type-adverb { border-color: var(--c-yellow); color: var(--t-yellow); }
+        .type-other { border-color: var(--c-gray); color: var(--t-gray); }
+
+        /* 通用样式 */
+        .screen { position: absolute; inset: 0; transition: opacity 0.5s ease, transform 0.5s ease; width: 100%; height: 100%; }
+        .screen.hidden-screen { opacity: 0; pointer-events: none; transform: scale(0.95); z-index: -1; }
+        .screen.active-screen { opacity: 1; pointer-events: auto; transform: scale(1); z-index: 10; }
+/* 🌸 中文注释：[新增] 全局安全区适配类 - 专门用于刘海屏/灵动岛避让 */
+.safe-area-top {
+    /* 基础高度(60px) + 刘海高度 */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 15px) !important;
+    height: auto !important; /* 让高度自动撑开 */
+    min-height: 80px; /* 最小高度保障 */
+}
+/* 🌸 侧边栏的顶部也要避让，不然“收藏夹”三个字会被挡住 */
+.sidebar-header-safe {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 15px) !important;
+    height: auto !important;
+}
+        /* --- 🚀 终极去边框：确保输入框完全没有任何黑线 --- */
+.input-box-wrapper { 
+    background: white; 
+    box-shadow: 0 15px 40px -10px rgba(0,0,0,0.05); 
+    border: none !important; 
+    outline: none !important;
+    transition: all 0.3s ease; 
+}
+.input-box-wrapper:focus-within { 
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.08); 
+    transform: translateY(-2px); 
+}
+/* ------------------------------------------ */
+        textarea { resize: none; font-family: 'Zen Maru Gothic', sans-serif; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .star-icon.active { color: #fbbf24; transform: scale(1.2); }
+        
+        .tag-n1 { background: #ef4444; color: white; }
+        .tag-n2 { background: #f97316; color: white; }
+        .tag-n3 { background: #eab308; color: white; }
+        .tag-n4 { background: #84cc16; color: white; }
+        .tag-n5 { background: #22c55e; color: white; }
+
+        #settings-modal { backdrop-filter: blur(5px); }
+        .spin-anim { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- 分组样式 --- */
+        .group-box {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 4px 4px 0 4px;
+            margin: 0 4px 16px 4px;
+            position: relative;
+            background-color: rgba(241, 245, 249, 0.4);
+            z-index: 5;
+        }
+        .group-box .capsule { margin-bottom: 8px !important; }
+        /* ============================================== */
+/* 浅粉色主题 - 替换所有紫色为浅粉色 */
+/* ============================================== */
+
+/* 1. 输入框焦点效果 */
+#sentenceInput:focus,
+#wordInput:focus,
+input[type="text"]:focus,
+textarea:focus {
+    outline: 2px solid transparent !important;
+    outline-offset: 2px !important;
+    border-color: #f9a8d4 !important; /* 浅粉色边框 */
+}
+
+/* 2. 禁用Edge的默认焦点样式 */
+#sentenceInput:focus-visible,
+#wordInput:focus-visible,
+input[type="text"]:focus-visible,
+textarea:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(249, 168, 212, 0.3) !important; /* 浅粉色阴影 */
+}
+
+/* 3. 输入框默认样式 */
+#sentenceInput,
+#wordInput,
+input[type="text"],
+textarea {
+    border: 2px solid #d1d5db !important;
+    border-radius: 12px !important;
+    transition: all 0.3s ease !important;
+    padding: 12px !important;
+    font-size: 16px !important;
+}
+
+/* 4. 输入框获得焦点时的完整效果 */
+#sentenceInput:focus,
+#wordInput:focus,
+input[type="text"]:focus,
+textarea:focus {
+    border-color: #f9a8d4 !important;
+    box-shadow: 0 0 0 3px rgba(249, 168, 212, 0.2) !important;
+}
+
+/* 5. 修改"本地解析"按钮颜色 */
+.local-parse-btn,
+.parse-button,
+button[type="submit"],
+input[type="submit"],
+.button.primary {
+    background-color: #f9a8d4 !important; /* 浅粉色背景 */
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 12px 24px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+/* 6. 按钮悬停效果 */
+.local-parse-btn:hover,
+.parse-button:hover,
+button[type="submit"]:hover,
+input[type="submit"]:hover,
+.button.primary:hover {
+    background-color: #f472b6 !important; /* 稍深的粉色 */
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3) !important;
+}
+
+/* 🌸 中文注释：确保弹窗内的按钮文字清晰居中 */
+        .rel-btn { display: flex; align-items: center; justify-content: center; min-height: 40px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col fixed inset-0">
+
+    <!-- Toast 通知组件 -->
+    <div id="toast-message"><i class="fa-solid fa-circle-check text-green-400"></i> <span id="toast-text">操作成功</span></div>
+
+    <!-- 顶栏 -->
+<nav class="safe-area-top bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-end pb-3 justify-between px-4 md:px-6 shrink-0 z-50 transition-all">
+        <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="goBack()">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-300 to-purple-300 shadow-sm flex items-center justify-center text-white font-bold text-xs">JP</div>
+            <span class="font-bold text-gray-600 tracking-wider text-sm md:text-base hidden md:inline">Grammar Focus</span>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <!-- [扳家] 施工模式扳手 -->
+            <button onclick="toggleEditMode()" id="nav-edit-btn" class="w-9 h-9 rounded-full bg-white border border-gray-200 text-slate-400 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center hidden" title="进入施工模式">
+                <i class="fa-solid fa-wrench"></i>
+            </button>
+            <button onclick="startReorderPractice()" class="w-9 h-9 rounded-full bg-white border border-gray-200 text-slate-400 hover:text-amber-500 transition-all shadow-sm flex items-center justify-center" title="重组练习">
+                <i class="fa-solid fa-puzzle-piece"></i>
+            </button>
+            <button onclick="startClozePractice()" class="w-9 h-9 rounded-full bg-white border border-gray-100 text-slate-400 hover:text-emerald-500 transition-all shadow-sm flex items-center justify-center" title="填空练习">
+                <i class="fa-solid fa-pen-clip"></i>
+            </button>
+            <button onclick="toggleSidebar()" class="w-9 h-9 rounded-full bg-white border border-gray-200 text-slate-400 hover:text-indigo-500 transition-all shadow-sm flex items-center justify-center mr-1" title="我的生词本">
+                <i class="fa-solid fa-book-bookmark"></i>
+            </button>
+            <div id="export-tools" class="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm hidden opacity-0 transition-opacity">
+                <button onclick="exportTXT()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500"><i class="fa-regular fa-file-lines"></i></button>
+                <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                <button onclick="exportWord()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-blue-50 text-blue-500"><i class="fa-regular fa-file-word"></i></button>
+            </div>
+            <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-white border border-gray-200 text-slate-400 hover:text-indigo-500 hover:rotate-90 transition-all shadow-sm flex items-center justify-center">
+                <i class="fa-solid fa-circle-info"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- SCREEN 1: 输入页 -->
+    <div id="screen-input" class="screen active-screen flex flex-col items-center justify-center p-6 bg-[#fdfbf7] z-40">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-black text-slate-700 tracking-tight mb-2">日语语法 Focus (Local)</h1>
+            <p class="text-slate-400 text-sm md:text-base">离线版：输入句子拆解语法，或输入单词查询</p>
+        </div>
+        
+        <div class="w-full max-w-2xl input-box-wrapper rounded-3xl p-2 relative">
+            <textarea id="user-input" rows="3" class="w-full bg-transparent border-none focus:ring-0 text-lg md:text-2xl text-slate-700 placeholder:text-slate-300 p-4 resize-none" placeholder="输入例如：私は日本へ行きます / 諦める"></textarea>
+            
+            <div class="flex justify-between items-center px-4 pb-2 mt-2 border-t border-slate-50 pt-3">
+                <div class="flex gap-2 text-xs text-slate-400" id="api-status"></div>
+                <button onclick="handleAnalysis()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-indigo-200 transition-transform active:scale-95 flex items-center gap-2">
+                    本地解析 <i class="fa-solid fa-bolt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-8 flex gap-3 flex-wrap justify-center">
+            <button onclick="fillInput('日本語を勉強するのは楽しいです')" class="px-4 py-2 bg-white border border-slate-100 rounded-full text-slate-500 text-sm hover:text-indigo-500 transition">句子示例</button>
+            <button onclick="fillInput('一生懸命')" class="px-4 py-2 bg-white border border-slate-100 rounded-full text-slate-500 text-sm hover:text-indigo-500 transition">单词示例</button>
+        </div>
+
+        <div id="loading-overlay" class="absolute inset-0 bg-[#fdfbf7]/95 z-50 flex flex-col items-center justify-center hidden">
+            <div class="flex gap-2 mb-4">
+                <div class="w-4 h-4 bg-indigo-400 rounded-full loader-dot"></div>
+                <div class="w-4 h-4 bg-purple-400 rounded-full loader-dot"></div>
+                <div class="w-4 h-4 bg-pink-400 rounded-full loader-dot"></div>
+            </div>
+            <p id="loading-text" class="text-slate-500 font-bold tracking-widest animate-pulse">正在快速解析中...</p>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: 结果页 -->
+    <div id="screen-result" class="screen hidden-screen flex flex-col h-full z-30">
+        <div class="flex-1 flex flex-col relative overflow-hidden w-full">
+            
+            <!-- 上半部分：句子展示区 -->
+            <div class="flex-1 flex flex-col items-center justify-center p-2 md:p-4 overflow-y-auto relative w-full transition-all duration-300">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-100 rounded-full blur-[100px] opacity-30 pointer-events-none"></div>
+                
+                <!-- 文字展示区域 -->
+                <div id="display-area" class="relative z-10 w-full px-2 flex flex-col items-center"></div>
+            </div>
+
+<div id="practice-area" class="relative z-10 w-full px-6">
+                    <div id="practice-workspace" class="practice-zone shadow-inner"></div>
+                    
+                    <div id="practice-options" class="flex flex-wrap justify-center gap-2 mt-12 min-h-[100px]"></div>
+                    
+                    <div class="mt-16 flex flex-col sm:flex-row gap-4 items-center justify-center">
+                        <button onclick="checkPractice()" class="w-full sm:w-auto px-12 py-4 bg-indigo-600 text-white rounded-full font-bold shadow-xl shadow-indigo-100 hover:shadow-indigo-200 active:scale-95 transition-all text-lg">
+                            检查答案
+                        </button>
+                        <button onclick="exitPractice()" class="w-full sm:w-auto px-8 py-3 bg-white/50 border border-gray-100 text-gray-400 rounded-full font-bold hover:text-red-400 transition-all text-sm">
+                            退出练习
+                        </button>
+                    </div>
+                </div>
+
+<div id="floating-toolbar">
+        <div class="flex items-center">
+            <button onclick="undo()" class="tool-btn text-slate-500 hover:bg-slate-100" title="撤销"><i class="fa-solid fa-rotate-left"></i></button>
+            <button onclick="redo()" class="tool-btn text-slate-500 hover:bg-slate-100" title="重做"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="flex items-center gap-1">
+            <button onclick="splitSegment()" class="tool-btn text-rose-500 hover:bg-rose-50"><i class="fa-solid fa-scissors"></i><span>拆分</span></button>
+            <button onclick="mergeSegments()" class="tool-btn bg-indigo-600 text-white shadow-md shadow-indigo-100 hover:bg-indigo-700"><i class="fa-solid fa-link"></i><span>融合</span></button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="flex items-center gap-1">
+            <button onclick="linkSegments()" class="tool-btn text-amber-600 hover:bg-amber-50"><i class="fa-solid fa-anchor"></i><span>关联</span></button>
+            <button onclick="unlinkSegments()" class="tool-btn text-slate-400 hover:text-red-500" title="取消关联"><i class="fa-solid fa-link-slash"></i></button>
+            <button onclick="createGroup()" class="tool-btn text-emerald-600 hover:bg-emerald-50"><i class="fa-regular fa-square-check"></i><span>编队</span></button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <button onclick="toggleEditMode()" class="tool-btn text-slate-400 hover:bg-slate-800 hover:text-white" title="退出施工">
+            <i class="fa-solid fa-check-double"></i>
+        </button>
+    </div>
+
+            <!-- 下半部分：解析卡片面板 -->
+            <div id="bottom-panel" class="h-72 border-t border-gray-100 bg-white/95 backdrop-blur-xl relative shadow-[0_-5px_30px_rgba(0,0,0,0.03)] z-30 flex flex-col rounded-t-2xl md:rounded-none shrink-0 transition-all duration-300">
+                <button onclick="togglePanel()" class="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center cursor-pointer shadow-md text-gray-400">
+                    <i id="panel-icon" class="fa-solid fa-chevron-down text-sm"></i>
+                </button>
+                
+                <!-- 面板头部 -->
+                <div class="px-4 py-3 border-b border-gray-50 flex justify-between items-center shrink-0 h-14">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                            <i class="fa-solid fa-layer-group text-indigo-300 mr-2"></i>解析结果
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 卡片容器 -->
+                <div id="cards-container" class="flex-1 overflow-y-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 content-start hide-scroll pb-20 md:pb-6"></div>
+            </div>
+
+        </div>
+    </div>
+
+<aside id="right-sidebar" class="fixed inset-y-0 right-0 z-[55] flex flex-col bg-white shadow-2xl md:shadow-none transition-all duration-300 translate-x-full w-0 pc-closed border-l border-gray-100">
+<button onclick="toggleSidebar()" class="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-20 z-50 outline-none flex items-center justify-end group transition-all">
+            <div class="w-1 h-8 bg-gray-300/30 rounded-full group-hover:bg-indigo-400 group-hover:w-1.5 transition-all"></div>
+        </button>
+        
+        <div class="sidebar-header-safe px-4 pb-3 border-b border-gray-50 bg-gray-50/80 flex justify-between items-end shrink-0">
+            <div class="flex items-center gap-2">
+                <h2 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-star text-yellow-400 mr-2"></i>收藏夹</h2>
+                <span id="notebook-count" class="inline-block text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <button onclick="toggleSidebar()" class="text-gray-400 p-2 hover:text-indigo-500 transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div id="notebook-list" class="flex-1 overflow-y-auto p-3 space-y-2 hide-scroll bg-gray-50/30 pb-20"></div>
+
+        <div class="p-4 border-t border-gray-100 text-center bg-white relative z-10 shrink-0">
+            <button onclick="clearNotebook()" class="text-xs text-gray-400 hover:text-red-500 transition underline cursor-pointer py-2 px-4">清空收藏</button>
+        </div>
+    </aside>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[54] hidden md:hidden transition-opacity duration-300 opacity-0"></div>
+
+    <div id="magnify-modal" onclick="closeMagnify()" class="fixed inset-0 bg-[#fdfbf7]/95 backdrop-blur-md z-[70] hidden flex flex-col items-center justify-center p-6 transition-opacity duration-300 opacity-0 cursor-pointer">
+        <div class="text-center w-full max-w-lg transform transition-transform duration-300 scale-90" id="magnify-container" onclick="event.stopPropagation()">
+            <div id="mag-tag" class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-600 mb-6 shadow-sm">N3 语法</div>
+            <div class="mb-8 relative">
+                <p id="mag-reading" class="text-2xl md:text-3xl text-slate-400 font-medium mb-2 tracking-widest text-center min-h-[2rem]"></p>
+                <h1 id="mag-title" class="text-6xl md:text-8xl font-black text-slate-800 leading-tight tracking-tight text-center break-words">一生懸命</h1>
+            </div>
+            <div class="bg-white/80 rounded-3xl p-6 shadow-xl border border-white/50 backdrop-blur-sm">
+                <p id="mag-meaning" class="text-2xl font-bold text-indigo-600 mb-3">拼命努力</p>
+                <p id="mag-desc" class="text-base text-slate-500 leading-relaxed">解释文本。</p>
+            </div>
+            <p class="mt-10 text-slate-300 text-sm animate-pulse">点击任意处关闭</p>
+        </div>
+    </div>
+
+    <!-- 简化的 API 设置模态框 -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/30 z-[60] hidden flex items-center justify-center p-4">
+<div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 transform transition-all scale-95 opacity-0 text-center" id="settings-content">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">日语语法 Focus (Local)</h2>
+            <p class="text-slate-400 text-sm mb-6">当前运行在：离线极速模式</p>
+            
+            <div class="text-left space-y-3 mb-8 text-sm text-slate-600">
+                <div class="flex gap-3 items-start"><i class="fa-solid fa-check text-green-500 mt-1"></i><span>无需API，保护钱包</span></div>
+                <div class="flex gap-3 items-start"><i class="fa-solid fa-check text-green-500 mt-1"></i><span>内置 Kuromoji 在线解析引擎</span></div>
+                <div class="flex gap-3 items-start"><i class="fa-solid fa-check text-green-500 mt-1"></i><span>支持施工模式手动拆解融合</span></div>
+            </div>
+
+            <button onclick="closeSettings()" class="w-full py-3 rounded-xl bg-slate-800 text-white hover:bg-slate-900 font-bold transition-all shadow-lg active:scale-95">
+                我知道啦
+            </button>
+        </div>
+    </div>
+
+    <div id="rel-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl transform transition-all scale-100">
+            <h3 class="text-center font-bold text-slate-700 mb-4">设定关联关系</h3>
+            <div class="grid grid-cols-2 gap-3" id="rel-options">
+                <div onclick="confirmLink('谓宾', 'bg-po')" class="rel-btn bg-po" style="color:white !important">谓宾 (P-O)</div>
+                <div onclick="confirmLink('修饰', 'bg-mod')" class="rel-btn bg-mod" style="color:white !important">修饰 (Mod)</div>
+                <div onclick="confirmLink('补语', 'bg-comp')" class="rel-btn bg-comp" style="color:white !important">补语 (Comp)</div>
+                <div onclick="confirmLink('主谓', 'bg-subj')" class="rel-btn bg-subj" style="color:white !important">主谓 (S-P)</div>
+                <div onclick="confirmLink('并列', 'bg-para')" class="rel-btn bg-para" style="color:white !important">并列 (Para)</div>
+                <div onclick="closeRelModal()" class="rel-btn bg-slate-200" style="color:#64748b !important; grid-column: span 2; margin-top: 8px;">取消</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* 🌸 [新增] 监听主 App 发回来的词典解释 */
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'JP_RESULTS') {
+        const results = event.data.results;
+        let modified = false;
+
+        // 遍历当前的切片，把意思填进去
+        if (currentRenderData && currentRenderData.segments) {
+            currentRenderData.segments.forEach(seg => {
+                // 优先查汉字(k)，没有汉字查原形(title)
+                const key = seg.k || seg.title; 
+                if (results[key]) {
+    // 1. 只更新中间的含义展示
+    seg.m = results[key].m.replace(/\n/g, ' '); 
+    
+    // 2. 如果词典有读音，更新胶囊上方的注音
+    if (results[key].r) seg.r = results[key].r;
+    
+    // 3. [删除] 不要覆盖 desc，保留原本的 "原形: xxx / 读音: xxx"
+    // seg.desc = results[key].m;  <-- 这行删掉！
+    
+    modified = true;
+}
+            });
+            
+            // 如果有更新，重新渲染视图
+            if (modified) {
+                renderView(currentRenderData);
+                showToast("✨ 词义已自动匹配");
+            }
+        }
+    }
+});
+        const CONFIG_KEY = 'jp_grammar_core_config'; 
+        const NOTEBOOK_KEY = 'jp_grammar_core_notebook';
+        let config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{"url":"","key":"","model":""}');
+        
+        let tokenizer = null;
+        let isTokenizerReady = false;
+/* 🌸 尝试更换为 unpkg 源，它对 WebView 的跨域支持更好 */
+const DIC_URL = "https://unpkg.com/kuromoji@0.1.2/dict/";
+// 【功能结束】
+
+        // 随机颜文字列表
+        const KAOMOJIS = [
+            "( 🎀 ֊ ̫ ֊ )", "( ˶ˆ ᗜ ˆ˵ )", "( • ̀ω•́ )✧", "( 🍟 •̀ . •́ )", 
+            "( っ '-')╮ =͟͟͞͞ 🏐", "(* ￣3 ￣*)", "( ˘▽˘)っ♨", "✨( 👑 > ◡ < )"
+        ];
+
+        function initKuromoji() {
+            const statusEl = document.getElementById('api-status');
+            statusEl.innerHTML = `<span class="text-orange-400 animate-pulse"><i class="fa-solid fa-circle-notch fa-spin"></i> 正在加载离线词典...</span>`;
+            kuromoji.builder({ dicPath: DIC_URL }).build(function (err, _tokenizer) {
+                /* 🌸 中文注释：升级报错逻辑，把具体的错误代码（比如 404 或 0）打印出来 */
+                if (err) {
+                    console.error("❌ Kuromoji 加载失败明细:", err);
+                    // 如果提示 "status 0"，通常意味着是被安卓系统拦截了请求
+                    const errorMsg = err.message || "网络请求被拦截";
+                    statusEl.innerHTML = `<span class="text-red-500 text-xs">错误: ${errorMsg} (请检查网络权限)</span>`;
+                    
+                    // 弹窗报警，确保你能在手机上直接看到错误
+                    alert("词典下载失败原因: " + errorMsg);
+                } else {
+                    tokenizer = _tokenizer;
+                    isTokenizerReady = true;
+                    statusEl.innerHTML = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> 离线引擎就绪</span>`;
+                }
+            });
+        }
+        initKuromoji();
+
+// 🌸 中文注释：确保脚本在页面加载完成后运行，并正确调用渲染函数
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof renderNotebook === 'function') {
+                renderNotebook();
+            }
+        });
+
+        let notebook = JSON.parse(localStorage.getItem(NOTEBOOK_KEY) || '[]');
+        const isMobile = window.innerWidth < 768;
+        let isPanelOpen = !isMobile;
+        let isSidebarOpen = false;
+
+        function fillInput(text) { document.getElementById('user-input').value = text; }
+
+        function katakanaToHiragana(src) {
+            return src.replace(/[\u30a1-\u30f6]/g, function(match) {
+                var chr = match.charCodeAt(0) - 0x60;
+                return String.fromCharCode(chr);
+            });
+        }
+
+        // Toast 显示函数
+        function showToast(text, type = 'success') {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            toastText.innerText = text;
+            
+            if(type === 'error') toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-400"></i> <span id="toast-text">${text}</span>`;
+            else toast.innerHTML = `<i class="fa-solid fa-circle-check text-green-400"></i> <span id="toast-text">${text}</span>`;
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        async function handleAnalysis() {
+            const input = document.getElementById('user-input').value.trim();
+            if(!input) return showToast("请输入内容", 'error');
+            if (!isTokenizerReady || !tokenizer) return showToast("离线词典加载中...", 'error');
+
+            const loader = document.getElementById('loading-overlay');
+            loader.classList.remove('hidden');
+            
+            setTimeout(() => {
+                try {
+                    const rawTokens = tokenizer.tokenize(input);
+                    let processedSegments = rawTokens.map((t, index) => {
+                        const reading = t.reading ? katakanaToHiragana(t.reading) : "";
+                        const surface = t.surface_form;
+                        let type = 'other';
+                        if (t.pos === '名詞') type = 'object'; 
+                        else if (t.pos === '動詞') type = 'verb';
+                        else if (t.pos === '助詞') type = 'grammar'; 
+                        else if (t.pos === '形容詞') type = 'adverb';
+                        else if (t.pos === '副詞') type = 'adverb';
+                        
+                        return {
+                            id: `k${index}`, type: type,
+                            k: (surface !== reading && reading !== "") ? surface : "", 
+                            r: reading || surface, s: "", title: surface, 
+                            m: `${t.pos} · ${t.pos_detail_1}`, g: t.pos,
+                            desc: `原形: ${t.basic_form} / 读音: ${reading}`,
+                            jlpt: "", link: -1, rel: ""
+                        };
+                    });
+
+                    // 随机颜文字替代原本的离线模式文字
+                    const randomEmoji = KAOMOJIS[Math.floor(Math.random() * KAOMOJIS.length)];
+                    const resultData = { translation: randomEmoji, segments: processedSegments };
+
+                    /* 🌸 [新增] 收集所有单词，发给主 App 去查字典 */
+const wordsToLookup = processedSegments.map(s => s.k || s.title).filter(w => w && w.length > 0);
+// 发送消息给父窗口
+window.parent.postMessage({ type: 'JP_LOOKUP', words: wordsToLookup }, '*');
+                    
+                    renderView(resultData);
+                    document.getElementById('screen-input').classList.remove('active-screen');
+                    document.getElementById('screen-input').classList.add('hidden-screen');
+                    document.getElementById('screen-result').classList.remove('hidden-screen');
+                    document.getElementById('screen-result').classList.add('active-screen');
+                    document.getElementById('export-tools').classList.remove('hidden', 'opacity-0');
+                } catch (e) { showToast("解析出错: " + e.message, 'error'); } 
+                finally { loader.classList.add('hidden'); }
+            }, 300);
+        }
+
+        function goBack() {
+            document.getElementById('screen-result').classList.remove('active-screen');
+            document.getElementById('screen-result').classList.add('hidden-screen');
+            document.getElementById('screen-input').classList.remove('hidden-screen');
+            document.getElementById('screen-input').classList.add('active-screen');
+            document.getElementById('export-tools').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('export-tools').classList.add('hidden'), 300);
+        }
+
+        function renderView(data) {
+            currentRenderData = data; 
+            const navEditBtn = document.getElementById('nav-edit-btn');
+            if (navEditBtn) navEditBtn.classList.remove('hidden');
+
+            const display = document.getElementById('display-area');
+            const cards = document.getElementById('cards-container');
+            display.innerHTML = ''; cards.innerHTML = '';
+            
+            if (data.dictionary) renderDictionaryMode(data, display, cards);
+            else renderSentenceMode(data, display, cards);
+        }
+
+        function renderSentenceMode(data, display, cards) {
+            const sentenceDiv = document.createElement('div');
+            sentenceDiv.className = "flex flex-wrap justify-center items-end content-center gap-x-1 gap-y-6 w-full px-2 transition-all duration-300 relative z-10"; 
+            
+            selectedIds = [];
+            updateEditToolbar();
+
+            // 颜色映射
+            const typeColors = {
+                'topic': 'bg-pink-50 text-pink-600 border-pink-100',
+                'object': 'bg-sky-50 text-sky-600 border-sky-100',
+                'verb': 'bg-green-50 text-green-600 border-green-100',
+                'grammar': 'bg-purple-50 text-purple-600 border-purple-100',
+                'adverb': 'bg-yellow-50 text-yellow-600 border-yellow-100',
+                'other': 'bg-gray-50 text-slate-600 border-slate-100'
+            };
+
+            // 遍历渲染
+            let i = 0;
+            while (i < data.segments.length) {
+                const seg = data.segments[i];
+                if (seg.group) {
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = "group-box";
+                    let groupMembers = [];
+                    while (i < data.segments.length && data.segments[i].group === seg.group) {
+                        groupMembers.push(data.segments[i]);
+                        i++;
+                    }
+                    groupMembers.forEach(member => {
+                        const capsule = createCapsuleElement(member, data, typeColors);
+                        groupContainer.appendChild(capsule);
+                        createCardElement(member, data, cards, typeColors);
+                    });
+                    sentenceDiv.appendChild(groupContainer);
+                } else {
+                    if(!seg.id) seg.id = Math.random().toString(36).substr(2, 9);
+                    const capsule = createCapsuleElement(seg, data, typeColors);
+                    sentenceDiv.appendChild(capsule);
+                    createCardElement(seg, data, cards, typeColors);
+                    i++;
+                }
+            }
+
+            display.appendChild(sentenceDiv);
+
+            
+            const trans = document.createElement('div');
+            trans.className = "mt-6 md:mt-10 text-base md:text-xl font-medium text-gray-400 text-center relative z-10 px-4";
+            trans.innerText = data.translation;
+            display.appendChild(trans);
+        }
+
+        // [核心交互] 创建胶囊 & 长按手势逻辑
+        function createCapsuleElement(seg, data, typeColors) {
+            const capsule = document.createElement('div');
+            capsule.className = `capsule type-${seg.type || 'other'}`;
+            capsule.id = `cap-${seg.id}`; 
+            capsule.dataset.id = seg.id;
+            
+            let html = '';
+            const baseText = seg.k || seg.r || " ";
+            const rubyText = seg.k ? seg.r : ''; 
+            html += `<div class="char-group"><span class="char-ruby">${rubyText || '&nbsp;'}</span><span class="char-base">${baseText}</span></div>`;
+            if(seg.s && seg.s.trim() !== "") {
+                html += `<div class="char-group"><span class="char-ruby">&nbsp;</span><span class="char-base opacity-90">${seg.s}</span></div>`;
+            }
+            
+// 🌸 中文注释：渲染带颜色的图钉
+            if (seg.linkLabel) {
+                const colorClass = seg.linkClass || 'bg-rose-500';
+                html += `<div class="rel-pin ${colorClass}"><i class="fa-solid fa-anchor mr-1"></i>${seg.linkLabel}</div>`;
+            }
+            capsule.innerHTML = html;
+
+            // 处理普通点击
+            capsule.addEventListener('click', (e) => {
+                if (isDragSelecting) return; // 如果正在拖动选择，忽略点击
+                e.stopPropagation();
+                if (isEditMode) {
+                    toggleSelection(seg.id);
+                } else {
+                    if(!isPanelOpen) openPanel();
+                    setTimeout(() => document.getElementById(`card-${seg.id}`)?.scrollIntoView({behavior:'smooth', block:'nearest'}), 300);
+                    highlight(seg.id);
+                }
+            });
+
+            // --- 施工模式下的长按拖动逻辑 ---
+            let pressTimer = null;
+
+            const startHandler = (e) => {
+                if (!isEditMode) return;
+                
+                // 设置长按定时器 (300ms)
+                pressTimer = setTimeout(() => {
+                    isDragSelecting = true;
+                    if (navigator.vibrate) navigator.vibrate(50); // 震动反馈
+                    toggleSelection(seg.id); // 选中当前起始项
+                    
+                    // 阻止默认滚动，以便拖动
+                    document.body.style.overflow = 'hidden'; 
+                }, 300);
+            };
+
+            const moveHandler = (e) => {
+                if (!isEditMode) return;
+
+                // 如果移动了但定时器还没触发，说明是想滚动，清除长按逻辑
+                if (pressTimer && !isDragSelecting) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+
+                // 核心：拖动选择逻辑
+                if (isDragSelecting) {
+                    e.preventDefault(); // 阻止滚动
+                    const touch = e.touches ? e.touches[0] : e;
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    
+                    if (target) {
+                        const targetCap = target.closest('.capsule');
+                        if (targetCap) {
+                            const targetId = targetCap.dataset.id;
+                            // 简单的“涂抹”逻辑：滑过即选中（如果未选中）
+                            if (!selectedIds.includes(targetId)) {
+                                toggleSelection(targetId);
+                            }
+                        }
+                    }
+                }
+            };
+
+            const endHandler = (e) => {
+                if (pressTimer) clearTimeout(pressTimer);
+                if (isDragSelecting) {
+                    isDragSelecting = false;
+                    document.body.style.overflow = ''; // 恢复滚动
+                }
+            };
+
+            // 绑定触摸事件
+            capsule.addEventListener('touchstart', startHandler, {passive: false});
+            capsule.addEventListener('touchmove', moveHandler, {passive: false});
+            capsule.addEventListener('touchend', endHandler);
+            capsule.addEventListener('touchcancel', endHandler);
+
+            // 绑定鼠标事件 (为了桌面调试)
+            capsule.addEventListener('mousedown', startHandler);
+            document.addEventListener('mousemove', (e) => {
+                 if(e.buttons === 1) moveHandler(e); // 只有按下左键才算拖动
+            });
+            document.addEventListener('mouseup', endHandler);
+
+            return capsule;
+        }
+        
+        let isDragSelecting = false; // 全局标记是否处于拖动选择模式
+
+        function createCardElement(seg, data, cards, typeColors) {
+            const isSaved = notebook.some(n => n.title === seg.title);
+            const card = document.createElement('div');
+            card.id = `card-${seg.id}`;
+            card.className = "bg-white p-4 md:p-5 rounded-xl border border-gray-100 shadow-sm transition group relative active:scale-[0.98]";
+            
+            const colorClass = typeColors[seg.type] || typeColors['other'];
+            const segDataString = JSON.stringify(seg).replace(/'/g, "&#39;");
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex gap-2">
+                        <span class="${colorClass} border px-2 py-1 rounded text-[10px] font-bold uppercase">${seg.g}</span>
+                    </div>
+                    <div class="flex gap-1 -mr-2 -mt-2 relative z-20">
+                        <button onclick='event.stopPropagation(); openMagnify(${segDataString})' class="text-gray-300 hover:text-indigo-500 transition p-2 outline-none" title="放大查看"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button onclick='event.stopPropagation(); toggleStar(${segDataString}, this)' class="text-gray-200 hover:text-yellow-400 outline-none transition p-2"><i class="fa-solid fa-star star-icon ${isSaved ? 'active' : ''}"></i></button>
+                    </div>
+                </div>
+                <h3 class="text-lg font-bold text-gray-700 mt-1">${seg.title}</h3>
+                <p class="text-sm text-gray-500 mb-2">${seg.m}</p>
+                <p class="text-xs text-gray-400 leading-relaxed border-t border-gray-50 pt-2">${seg.desc || '暂无详细解释'}</p>
+            `;
+            card.addEventListener('click', () => !isEditMode && highlight(seg.id));
+            cards.appendChild(card);
+        }
+
+        function createGroup() {
+            saveHistory();
+            if (!currentRenderData || selectedIds.length < 1) return;
+            const groupId = "g-" + Math.random().toString(36).substr(2, 5);
+            
+            let modified = false;
+            currentRenderData.segments.forEach(seg => {
+                if (selectedIds.includes(seg.id)) {
+                    seg.group = groupId;
+                    modified = true;
+                }
+            });
+
+            if (modified) {
+                showToast("📦 编队成功");
+                selectedIds = [];
+                renderView(currentRenderData);
+            }
+        }
+
+        function renderDictionaryMode(data, display, cards) {
+            const d = data.dictionary;
+            const wordBox = document.createElement('div');
+            wordBox.className = "text-center mb-8";
+            wordBox.innerHTML = `<div class="text-sm text-gray-400 mb-1">${d.reading}</div><h1 class="text-5xl md:text-6xl font-black text-slate-700 mb-2 tracking-wide">${d.word}</h1><div class="flex gap-2 justify-center mt-3"><span class="px-2 py-1 bg-indigo-100 text-indigo-600 rounded text-xs font-bold">${d.type}</span></div><p class="text-xl text-gray-500 mt-4 font-medium">${d.meaning}</p>`;
+            display.appendChild(wordBox);
+            const exCard = document.createElement('div');
+            exCard.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm col-span-1 md:col-span-2 lg:col-span-3";
+            exCard.innerHTML = `<div class="text-gray-400 text-center">暂无例句 (离线模式)</div>`;
+            cards.appendChild(exCard);
+            if(!isPanelOpen) openPanel();
+        }
+
+        // --- 施工模式 & 高亮逻辑 ---
+        let isEditMode = false;
+        let selectedIds = [];
+        let currentRenderData = null; 
+        /* --- 🚀 核心：撤销/重做逻辑系统 --- */
+let historyStack = [];
+let redoStack = [];
+
+// 保存当前状态到历史记录
+function saveHistory() {
+    if (!currentRenderData) return;
+    // 使用深拷贝保存数据，防止引用干扰
+    historyStack.push(JSON.stringify(currentRenderData));
+    // 每次产生新动作时，重做栈都要清空
+    redoStack = [];
+    // 限制历史记录最多保存 20 步，防止占用过多内存
+    if (historyStack.length > 20) historyStack.shift();
+}
+
+function undo() {
+    if (historyStack.length === 0) return showToast("没有更多可以撤销的操作", "error");
+    // 将当前状态压入重做栈
+    redoStack.push(JSON.stringify(currentRenderData));
+    // 弹出历史记录并恢复
+    currentRenderData = JSON.parse(historyStack.pop());
+    renderView(currentRenderData);
+    showToast("已撤销");
+}
+
+function redo() {
+    if (redoStack.length === 0) return showToast("没有更多可以重做的操作", "error");
+    // 将当前状态压回历史栈
+    historyStack.push(JSON.stringify(currentRenderData));
+    // 从重做栈恢复
+    currentRenderData = JSON.parse(redoStack.pop());
+    renderView(currentRenderData);
+    showToast("已重做");
+}
+/* ---------------------------------- */
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('nav-edit-btn');
+            
+            if (isEditMode) {
+                btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                btn.classList.remove('bg-white', 'text-slate-400', 'border-gray-200');
+                showToast("施工模式：长按可拖动多选");
+                if (currentRenderData) renderView(currentRenderData);
+            } else {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                btn.classList.add('bg-white', 'text-slate-400', 'border-gray-200');
+                selectedIds = []; 
+                updateEditToolbar(); 
+                if (currentRenderData) renderView(currentRenderData);
+            }
+        }
+
+        function toggleSelection(id) {
+            const cap = document.querySelector(`.capsule[data-id="${id}"]`);
+            if (!cap) return; 
+            if (selectedIds.includes(id)) {
+                selectedIds = selectedIds.filter(i => i !== id); cap.classList.remove('is-selected');
+            } else {
+                selectedIds.push(id); cap.classList.add('is-selected');
+            }
+            updateEditToolbar();
+        }
+
+function updateEditToolbar() {
+            const toolbar = document.getElementById('floating-toolbar');
+            if (!toolbar) return;
+            
+            // 💡 动态调整按钮状态的小技巧
+            const mergeBtn = toolbar.querySelector('button[onclick="mergeSegments()"]');
+            if (mergeBtn) {
+                mergeBtn.style.opacity = selectedIds.length >= 2 ? "1" : "0.5";
+            }
+            
+            
+            // 🚀 修改：只要在施工模式，工具栏就一直显示，方便随时撤销
+            if (isEditMode) {
+                toolbar.classList.add('show');
+            } else {
+                toolbar.classList.remove('show');
+                selectedIds = []; // 退出模式时清空选中
+            }
+        }
+
+        // 融合逻辑 (包含状态保存，以便拆分)
+        function mergeSegments() {
+            saveHistory();
+            if (!currentRenderData || selectedIds.length < 2) return showToast("至少选择两个胶囊", "error");
+            let indices = [];
+            currentRenderData.segments.forEach((seg, idx) => { if (selectedIds.includes(seg.id)) indices.push(idx); });
+            indices.sort((a, b) => a - b);
+            
+            for (let i = 0; i < indices.length - 1; i++) {
+                if (indices[i+1] !== indices[i] + 1) return showToast("❌ 只能融合【相邻】的词块", "error");
+            }
+
+            let firstIdx = indices[0];
+            let hostSeg = currentRenderData.segments[firstIdx];
+
+            // 1. 保存原始片段（用于拆分）
+            // 我们需要深拷贝一份，因为 currentRenderData.segments 稍后会被修改
+            const childrenBackup = indices.map(idx => JSON.parse(JSON.stringify(currentRenderData.segments[idx])));
+            
+            // 2. 融合逻辑
+            let currentK = hostSeg.k || hostSeg.title;
+            let currentR = hostSeg.r || hostSeg.title;
+
+            for (let i = 1; i < indices.length; i++) {
+                let targetSeg = currentRenderData.segments[indices[i]];
+                hostSeg.title += targetSeg.title;
+                currentK += (targetSeg.k || targetSeg.title);
+                currentR += (targetSeg.r || targetSeg.title);
+            }
+
+            hostSeg.k = currentK;
+            hostSeg.r = currentR;
+            hostSeg.m = "组合词"; 
+            hostSeg.desc = "用户手动融合的词块";
+            hostSeg._children = childrenBackup; // [核心] 注入孩子数据
+
+            // 3. 删除旧片段
+            for (let i = indices.length - 1; i >= 1; i--) { currentRenderData.segments.splice(indices[i], 1); }
+            
+            selectedIds = [];
+            showToast("🔗 融合成功");
+            renderView(currentRenderData);
+        }
+
+        // [新功能] 拆分逻辑 (融合的反向操作)
+        function splitSegment() {
+            saveHistory();
+            if (!currentRenderData || selectedIds.length !== 1) return showToast("请选择【一个】需要拆分的词块", "error");
+            
+            const targetId = selectedIds[0];
+            const targetIndex = currentRenderData.segments.findIndex(s => s.id === targetId);
+            if (targetIndex === -1) return;
+
+            const targetSeg = currentRenderData.segments[targetIndex];
+
+            // 检查是否有备份的孩子节点
+            if (targetSeg._children && targetSeg._children.length > 0) {
+                // 执行拆分：删除当前融合节点，插入原始孩子节点
+                currentRenderData.segments.splice(targetIndex, 1, ...targetSeg._children);
+                
+                showToast("✂️ 拆分成功");
+                selectedIds = [];
+                renderView(currentRenderData);
+            } else {
+                // 如果是原生词块，无法拆分
+                showToast("⚠️ 原生词汇无法拆分", "error");
+            }
+        }
+
+/* 🌸 中文注释：建立逻辑关联 - 弹出选择框 */
+        function linkSegments() {
+            if (!currentRenderData || selectedIds.length !== 2) {
+                return showToast("请【长按多选】两个词块进行关联", "error");
+            }
+            document.getElementById('rel-modal').classList.remove('hidden');
+        }
+
+        function closeRelModal() {
+            document.getElementById('rel-modal').classList.add('hidden');
+        }
+
+        /* 🌸 中文注释：核心关联逻辑 - 支持融合块和编队内的所有元素 */
+        function confirmLink(label, colorClass) {
+            saveHistory();
+            const linkId = "L-" + Math.random().toString(36).substr(2, 5);
+            
+            currentRenderData.segments.forEach(seg => {
+                if (selectedIds.includes(seg.id)) {
+                    seg.linkId = linkId;
+                    seg.linkLabel = label;
+                    seg.linkClass = colorClass; // 记录颜色类名
+                }
+            });
+
+            showToast(`⚓ 已建立【${label}】关联`);
+            closeRelModal();
+            selectedIds = [];
+            renderView(currentRenderData);
+        }
+
+/* 🌸 中文注释：升级后的高亮函数 - 采用 Glow 模式不遮挡文字颜色 */
+        function highlight(id) {
+            // 1. 清除旧状态
+            document.querySelectorAll('.capsule').forEach(el => {
+                el.classList.remove('active', 'logic-link-active', 'glow-po', 'glow-mod', 'glow-comp', 'glow-subj', 'glow-para');
+            });
+            document.querySelectorAll('.ring-2').forEach(el => el.classList.remove('ring-2', 'ring-indigo-100', 'bg-indigo-50/30'));
+
+            // 2. 查找关联关系
+            const clickedSeg = currentRenderData.segments.find(s => s.id === id);
+            if (clickedSeg && clickedSeg.linkId) {
+                currentRenderData.segments.forEach(s => {
+                    // 如果找到关联的“另一半”
+                    if (s.linkId === clickedSeg.linkId && s.id !== id) {
+                        const targetEl = document.querySelector(`.capsule[data-id="${s.id}"]`);
+                        if (targetEl) {
+                            targetEl.classList.add('logic-link-active');
+                            // 💡 关键：将 bg-po 转换为 glow-po 类，实现外发光而不改文字颜色
+                            if (clickedSeg.linkClass) {
+                                const glowClass = clickedSeg.linkClass.replace('bg-', 'glow-');
+                                targetEl.classList.add(glowClass);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. 激活当前词
+            document.querySelector(`.capsule[data-id="${id}"]`)?.classList.add('active');
+            document.getElementById(`card-${id}`)?.classList.add('ring-2', 'ring-indigo-100', 'bg-indigo-50/30');
+        }
+
+        /* 🌸 中文注释：解决“点击两次”才缩回的面板逻辑 */
+        function togglePanel() {
+            const panel = document.getElementById('bottom-panel');
+            // 直接检测面板的实际显示高度，更可靠
+            if (panel.offsetHeight > 50) { 
+                closeSidebarPanel();
+            } else {
+                openPanel();
+            }
+        }
+
+        function openPanel() { 
+            const panel = document.getElementById('bottom-panel');
+            const panelIcon = document.getElementById('panel-icon');
+            if(panel) panel.style.height = window.innerWidth < 768 ? '16rem' : '18rem'; 
+            if(panelIcon) panelIcon.className = 'fa-solid fa-chevron-down text-xs'; 
+        }
+
+        function closeSidebarPanel() { 
+            const panel = document.getElementById('bottom-panel');
+            const panelIcon = document.getElementById('panel-icon');
+            if(panel) panel.style.height = '0px'; 
+            if(panelIcon) panelIcon.className = 'fa-solid fa-chevron-up text-xs'; 
+        }
+
+        /* 🌸 中文注释：[新增] 取消关联的功能 */
+        function unlinkSegments() {
+            saveHistory();
+            if (selectedIds.length === 0) return showToast("请选择要取消关联的词块", "error");
+            
+            let hasLinked = false;
+            currentRenderData.segments.forEach(seg => {
+                if (selectedIds.includes(seg.id) && seg.linkId) {
+                    delete seg.linkId;
+                    delete seg.linkLabel;
+                    delete seg.linkClass;
+                    hasLinked = true;
+                }
+            });
+
+            if (hasLinked) {
+                showToast("⚓ 已解除关联关系");
+                selectedIds = [];
+                renderView(currentRenderData);
+            } else {
+                showToast("所选词块没有关联信息", "error");
+            }
+        }
+
+        function toggleSidebar() { isSidebarOpen ? closeSidebar() : openSidebar(); }
+
+        function openSidebar() { 
+            const sb = document.getElementById('right-sidebar'); 
+            const overlay = document.getElementById('sidebar-overlay');
+            if(!sb) return;
+            sb.classList.remove('translate-x-full'); 
+            if(overlay) {
+                overlay.classList.remove('hidden'); 
+                setTimeout(()=>overlay.classList.remove('opacity-0'), 10);
+            }
+            sb.classList.remove('pc-closed', 'w-0'); 
+            sb.classList.add('w-80'); 
+            
+            const content = document.querySelector('.sidebar-content');
+            if(content) content.classList.remove('opacity-0', 'md:opacity-0');
+            
+            const icon = document.getElementById('sidebar-icon');
+            if(icon) icon.className = 'fa-solid fa-chevron-right text-xs'; 
+            isSidebarOpen = true; 
+        }
+
+        function closeSidebar() { 
+            const sb = document.getElementById('right-sidebar'); 
+            const overlay = document.getElementById('sidebar-overlay');
+            if(!sb) return;
+            // 🌸 核心：强制添加隐藏类
+            sb.classList.add('translate-x-full'); 
+            if(overlay) {
+                overlay.classList.add('opacity-0'); 
+                setTimeout(()=>overlay.classList.add('hidden'), 300);
+            }
+            // 针对电脑/平板适配的缩回
+            sb.classList.add('pc-closed', 'w-0'); 
+            sb.classList.remove('w-80'); 
+            
+            const content = document.querySelector('.sidebar-content');
+            if(content) content.classList.add('opacity-0', 'md:opacity-0');
+            
+            const icon = document.getElementById('sidebar-icon');
+            if(icon) icon.className = 'fa-solid fa-chevron-left text-xs'; 
+            isSidebarOpen = false; 
+        }
+
+        function toggleStar(item, btn) {
+            // 🌸 中文注释：向父窗口（懒人笔记）发送制卡消息
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'CREATE_JP_CARD',
+                    front: item.title,
+                    back: `${item.r ? '【读音】：' + item.r + '\\n' : ''}【含义】：${item.m}\\n【详情】：${item.desc || ''}`
+                }, '*');
+                showToast("✨ 已同步至笔记制卡");
+            }
+            const idx = notebook.findIndex(n => n.title === item.title && n.m === item.m); 
+            const icon = btn.querySelector('i');
+            if (idx === -1) { notebook.unshift(item); icon.classList.add('active'); } 
+            else { notebook.splice(idx, 1); icon.classList.remove('active'); }
+            saveNotebook();
+        }
+        function saveNotebook() { localStorage.setItem(NOTEBOOK_KEY, JSON.stringify(notebook)); renderNotebook(); }
+        function renderNotebook() {
+const list = document.getElementById('notebook-list'); 
+            const countEl = document.getElementById('notebook-count');
+            
+            // 🌸 安全检查：如果元素不存在，直接退出，不往下跑
+            if(!list || !countEl) return;
+
+            list.innerHTML = '';
+            countEl.innerText = notebook.length;
+            list.scrollTop = 0; 
+
+            if(notebook.length===0) { 
+                list.innerHTML='<div class="text-center text-gray-300 text-xs mt-10">暂无收藏</div>'; 
+                return; 
+            }
+            notebook.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "bg-white p-3 rounded-xl border border-gray-100 relative group hover:border-indigo-200 transition cursor-pointer mb-2";
+                const jlptTag = item.jlpt ? `<span class="text-[9px] px-1 rounded tag-${item.jlpt.toLowerCase()} text-white ml-2">${item.jlpt}</span>` : '';
+                row.innerHTML = `<div class="flex justify-between items-start"><div class="font-bold text-gray-700 text-sm">${item.title}</div>${jlptTag}</div><div class="text-[10px] text-gray-400 mt-1 line-clamp-2">${item.m}</div><button onclick="removeNote('${item.title}')" class="absolute top-3 right-3 text-gray-300 hover:text-red-400 md:opacity-0 group-hover:opacity-100 transition z-10 p-2"><i class="fa-solid fa-times"></i></button>`;
+                list.appendChild(row);
+            });
+        }
+        function removeNote(title) { const idx=notebook.findIndex(n=>n.title===title); if(idx!==-1){notebook.splice(idx,1); saveNotebook(); renderView({translation:'', segments:[]}); } }
+        function clearNotebook() { if(notebook.length && confirm('清空?')){notebook=[]; saveNotebook(); document.querySelectorAll('.star-icon').forEach(i=>i.classList.remove('active'));} }
+        function exportTXT() {
+            if(!notebook.length) return showToast('空空如也', 'error');
+            let c = "日语生词本\n\n"; notebook.forEach((i,x)=>c+=`${x+1}. ${i.title} [${i.jlpt||''}]\n   含义: ${i.m}\n   语法: ${i.g}\n   备注: ${i.desc}\n\n`);
+            const b=new Blob([c],{type:"text/plain"}); const l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="wordbook.txt";l.click();
+}
+
+        function exportWord() {
+            /* -------------------- 🌸 导出 Word 功能：修复版 (使用反引号) -------------------- */
+            // 1. 检查是否有内容
+            if (!notebook.length) return showToast('空空如也', 'error');
+
+            // 2. 使用反引号 (`) 构建 HTML，这样即使代码换行也不会报错 "Invalid token"
+            let htmlContent = `
+                <html>
+                <head><meta charset="utf-8"></head>
+                <body>
+                <h1 style="text-align:center">日语生词本</h1>
+                <table border="1" style="width:100%;border-collapse:collapse">
+                <tr><th>单词</th><th>等级</th><th>含义</th><th>详情</th></tr>
+            `;
+
+            // 3. 循环添加行 (使用 ${} 插入变量，比用加号 + 拼接更不容易出错)
+            notebook.forEach(item => {
+                htmlContent += `
+                    <tr>
+                        <td style="padding:5px"><b>${item.title}</b></td>
+                        <td>${item.jlpt || '-'}</td>
+                        <td>${item.m}</td>
+                        <td>${item.desc || ''}</td>
+                    </tr>
+                `;
+            });
+
+            // 4. 闭合标签
+            htmlContent += `</table></body></html>`;
+
+            // 5. 触发下载
+            let wordBlob = new Blob([htmlContent], { type: 'application/msword' });
+            let downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(wordBlob);
+            downloadLink.download = 'wordbook.doc';
+            downloadLink.click();
+            /* ------------------------------------------------------------------ */
+        }
+
+        // Settings (简化版)
+        function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('settings-content').classList.remove('scale-95','opacity-0'),10); }
+        function closeSettings() { document.getElementById('settings-content').classList.add('scale-95','opacity-0'); setTimeout(()=>document.getElementById('settings-modal').classList.add('hidden'),300); }
+/* 🌸 中文注释：删除了 saveSettings 函数，因为离线版不再需要保存 API 密钥了 */
+        
+        // 放大镜
+        function openMagnify(segData) {
+            const modal = document.getElementById('magnify-modal');
+            const container = document.getElementById('magnify-container');
+            document.getElementById('mag-title').innerText = segData.title;
+            const reading = (segData.r && segData.r !== segData.title) ? segData.r : '';
+            document.getElementById('mag-reading').innerText = reading;
+            document.getElementById('mag-meaning').innerText = segData.m;
+            document.getElementById('mag-desc').innerText = segData.desc || "暂无详细解析";
+            document.getElementById('mag-tag').innerText = (segData.g || '语法') + (segData.jlpt ? ` · ${segData.jlpt}` : '');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); container.classList.remove('scale-90'); container.classList.add('scale-100'); });
+        }
+        function closeMagnify() {
+            const modal = document.getElementById('magnify-modal');
+            const container = document.getElementById('magnify-container');
+            modal.classList.add('opacity-0'); container.classList.remove('scale-100'); container.classList.add('scale-90');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+/* 🌸 中文注释：练习模式 - 修复版 (包含丢失的辅助函数) */
+        let practiceMode = null; 
+        
+        // 重组模式变量
+        let answerSlots = []; 
+        let sourceList = [];
+
+        // --- 0. [核心修复] 丢失的词块生成函数 ---
+        function createPracticeCapsule(seg, onClick) {
+            const cap = document.createElement('div');
+            // 如果没有 onClick，说明是填空题里的“上下文”，不需要点击手势
+            cap.className = `capsule type-${seg.type || 'other'} scale-90`;
+            if (!onClick) {
+                cap.style.cursor = "default";
+                cap.style.pointerEvents = "none"; 
+            } else {
+                cap.style.cursor = "pointer";
+                cap.onclick = onClick;
+            }
+
+            // 获取显示内容
+            const baseText = seg.k || seg.title || seg.r || " ";
+            const rubyText = seg.k ? (seg.r || "") : "";
+            
+            cap.innerHTML = `<div class="char-group"><span class="char-ruby">${rubyText}&nbsp;</span><span class="char-base">${baseText}</span></div>`;
+            return cap;
+        }
+
+        // --- 1. 重组练习 (固定坑位版) ---
+        function startReorderPractice() {
+            if (!currentRenderData) return showToast("请先解析一个句子", "error");
+            practiceMode = 'reorder';
+            
+            const count = currentRenderData.segments.length;
+            answerSlots = new Array(count).fill(null);
+            sourceList = [...currentRenderData.segments].sort(() => Math.random() - 0.5);
+            
+            togglePracticeUI(true);
+            renderReorder();
+        }
+
+        function renderReorder() {
+            const workspace = document.getElementById('practice-workspace');
+            const options = document.getElementById('practice-options');
+            workspace.innerHTML = ''; options.innerHTML = '';
+
+            // 渲染上方坑位
+            answerSlots.forEach((seg, idx) => {
+                const container = document.createElement('div');
+                container.className = `slot-container ${seg ? 'filled' : ''}`;
+                container.innerHTML = `<div class="slot-line"></div>`; // 底部虚线
+
+                if (seg) {
+                    // 坑里有词，点击取下
+                    const cap = createPracticeCapsule(seg, () => { 
+                        answerSlots[idx] = null; 
+                        renderReorder(); 
+                    });
+                    container.appendChild(cap);
+                }
+                workspace.appendChild(container);
+            });
+
+            // 渲染下方备选项
+            sourceList.forEach((seg) => {
+                const isUsed = answerSlots.some(slot => slot && slot.id === seg.id);
+                const cap = createPracticeCapsule(seg, () => {
+                    const emptyIdx = answerSlots.indexOf(null);
+                    if (emptyIdx !== -1) { answerSlots[emptyIdx] = seg; renderReorder(); }
+                    else showToast("坑位已满", "error");
+                });
+                
+                if (isUsed) { cap.style.opacity = "0.1"; cap.style.pointerEvents = "none"; }
+                options.appendChild(cap);
+            });
+        }
+
+        // --- 2. 填空练习 (手动输入 + 上下文显示) ---
+        function startClozePractice() {
+            if (!currentRenderData) return showToast("请先解析一个句子", "error");
+            practiceMode = 'cloze';
+            togglePracticeUI(true);
+            
+            const workspace = document.getElementById('practice-workspace');
+            const options = document.getElementById('practice-options');
+            workspace.innerHTML = ''; 
+            options.innerHTML = '<p class="text-slate-400 text-sm">请在横线上输入缺失的内容（支持汉字或假名）</p>';
+
+            currentRenderData.segments.forEach(seg => {
+/* 🌸 中文注释：精准语法挖空 —— 锁定助词(grammar)和助动词(です/ます等)，绝对排除名词 */
+                const isGrammar = (seg.type === 'grammar' || seg.g === '助詞'); // 助词
+                const isAuxiliary = (seg.g === '助動詞'); // 助动词（动词变形的核心）
+                const isNoun = (seg.g === '名詞' || seg.type === 'object'); // 名词（日本語、人等）
+
+                // 只有是语法成分且不是名词时，才允许挖空
+                const shouldHide = (isGrammar || isAuxiliary) && !isNoun;
+
+                if (shouldHide) {
+                    // 挖空：显示输入框
+                    const input = document.createElement('input');
+                    input.className = 'cloze-input';
+                    input.dataset.answer = seg.k || seg.title; // 答案存这里
+                    
+// 🌸 中文注释：根据字数计算宽度，并预留一点左右间距
+                    const textLength = (seg.k || seg.title).length;
+                    const calculatedWidth = Math.max(60, textLength * 28 + 20);
+                    input.style.width = `${calculatedWidth}px`;
+                    input.placeholder = "？"; // 增加一个淡淡的问号提示
+                    
+                    workspace.appendChild(input);
+                } else {
+                    // 不挖空：显示上下文词块 (这就是你之前缺的东西！)
+                    const cap = createPracticeCapsule(seg, null);
+                    workspace.appendChild(cap);
+                }
+            });
+        }
+
+        // --- 3. 检查答案 ---
+        function checkPractice() {
+            if (practiceMode === 'reorder') {
+                if (answerSlots.includes(null)) return showToast("还有空位没填完哦", "error");
+                const isCorrect = answerSlots.every((seg, i) => seg.id === currentRenderData.segments[i].id);
+                
+                if (isCorrect) showToast("🎉 顺序完全正确！");
+                else showToast("顺序不对哦", "error");
+            
+            } else if (practiceMode === 'cloze') {
+                let allCorrect = true;
+                document.querySelectorAll('.cloze-input').forEach(input => {
+                    const userVal = input.value.trim();
+                    const answer = input.dataset.answer;
+                    
+                    if (userVal === answer) {
+                        input.className = 'cloze-input correct'; // 变绿
+                    } else {
+                        input.className = 'cloze-input wrong'; // 变红
+                        allCorrect = false;
+                    }
+                });
+                
+                if (allCorrect) showToast("🎉 全对啦！太强了！");
+                else showToast("还有填错的地方哦", "error");
+            }
+        }
+
+function togglePracticeUI(show) {
+            const display = document.getElementById('display-area');
+            const practice = document.getElementById('practice-area');
+            const panel = document.getElementById('bottom-panel');
+
+            if (show) {
+                display.classList.add('hidden');
+                practice.style.display = 'flex'; // 🌸 核心：使用 flex 才能让 CSS 里的居中生效
+                panel.style.height = '0px';
+            } else {
+                display.classList.remove('hidden');
+                practice.style.display = 'none';
+                // 恢复面板高度逻辑
+                panel.style.height = window.innerWidth < 768 ? '0px' : '18rem'; 
+            }
+        }
+
+        function exitPractice() {
+            togglePracticeUI(false);
+            practiceMode = null;
+        }
+    </script>
+</body>
+</html>

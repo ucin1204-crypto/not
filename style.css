@@ -1,0 +1,525 @@
+/* ========================================== */
+/* 🌸 1. 基础环境与全局设定 */
+/* ========================================== */
+html, body { 
+    font-family: 'Noto Sans SC', sans-serif; 
+    background-color: #fdfbf7; 
+    color: #4a4a4a; 
+    overflow: hidden; 
+    /* 🌸 中文注释：使用 dvh 动态高度，完美适配移动端地址栏伸缩，防止内容被遮挡 */
+    height: 100dvh;
+    overscroll-behavior: none;
+}
+
+.cute-bg {
+    background-color: #fdfbf7;
+    background-image: radial-gradient(#e5e7eb 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+}
+
+/* 🌸 中文注释：黑夜模式全局配色方案 */
+/* 🌙 中文注释：黑夜模式——调整为低对比度护眼版本（柔和） */
+.dark-mode-active {
+    background-color: #1a1a1a !important;  /* 深灰背景 */
+    color: #e8e8e8 !important;             /* 浅灰文字 */
+}
+.dark-mode-active .cute-bg {
+    background-color: #000000 !important;
+    background-image: none !important; /* 🌸 去掉干扰的背景点点 */
+}
+/* 🌸 中文注释：卡片与工具栏也改为深邃黑，并配合细微的灰色边框区分边缘 */
+/* 🌸 [修复] 黑夜模式下强行将粗体文字转为白色，防止与背景融为一体 */
+/* 🌸 [修复] 带上 b 标签一起变白 */
+.dark-mode-active .editor-core strong,
+.dark-mode-active .editor-core b {
+    color: #ffffff !important;
+}
+.dark-mode-active .bg-white, 
+.dark-mode-active .bg-white\/90,
+.dark-mode-active header,
+.dark-mode-active .editor-core {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border-color: #1f2937 !important;
+}
+.dark-mode-active .text-gray-700, 
+.dark-mode-active .text-gray-600 {
+    color: #9ca3af !important;
+}
+/* 保持按钮可见度 */
+.dark-mode-active .hover\:bg-gray-100:hover {
+    background-color: #3f3f46 !important;
+}
+
+/* 🌸 [去油版] 荧光笔暗色适配：低饱和背景 + 霓虹细线 */
+.dark-mode-active .editor-core span.hl-pink { background: rgba(236, 72, 153, 0.12) !important; color: #f9a8d4 !important; border-bottom: 1.5px solid rgba(236, 72, 153, 0.6) !important; padding: 0 2px; border-radius: 3px; }
+.dark-mode-active .editor-core span.hl-green { background: rgba(16, 185, 129, 0.12) !important; color: #6ee7b7 !important; border-bottom: 1.5px solid rgba(16, 185, 129, 0.6) !important; padding: 0 2px; border-radius: 3px; }
+.dark-mode-active .editor-core span.hl-blue { background: rgba(59, 130, 246, 0.12) !important; color: #93c5fd !important; border-bottom: 1.5px solid rgba(59, 130, 246, 0.6) !important; padding: 0 2px; border-radius: 3px; }
+.dark-mode-active .editor-core span.hl-purple { background: rgba(139, 92, 246, 0.12) !important; color: #c4b5fd !important; border-bottom: 1.5px solid rgba(139, 92, 246, 0.6) !important; padding: 0 2px; border-radius: 3px; }
+.dark-mode-active .editor-core span.hl-yellow { background: rgba(245, 158, 11, 0.12) !important; color: #fde68a !important; border-bottom: 1.5px solid rgba(245, 158, 11, 0.6) !important; padding: 0 2px; border-radius: 3px; }
+
+/* 🌸 中文注释：黑夜模式专用——文字贴纸发光效果 */
+.dark-mode-active .editor-core span.hl-shadow { 
+    color: #fce7f3 !important; 
+    text-shadow: 0 0 8px rgba(236, 72, 153, 0.6), 1px 1px 0px rgba(0,0,0,0.8) !important; 
+}
+
+/* 🌸 中文注释：黑夜模式专用——背诵挖空（未点击时深沉，点击后半透明发光） */
+/* 🌸 中文注释：黑夜模式专用——背诵挖空强化对比度 */
+.dark-mode-active.study-active .editor-core .recite-point:not(.revealed) {
+    background-color: #1e1b4b !important; /* 还没点开时，是极深的暗紫色 */
+    color: #1e1b4b !important;
+    border-bottom: 2px dashed #4338ca !important;
+}
+.dark-mode-active.study-active .editor-core .recite-point.revealed {
+    background-color: rgba(34, 211, 238, 0.1) !important;
+    color: #22d3ee !important; /* 🌸 点开后是明亮的“青空蓝”，对比度极高 */
+    border-bottom: 2px solid #22d3ee !important;
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5) !important; /* 增加发光感 */
+}
+
+/* 🌸 中文注释：批注文字的样式（虚线底） */
+.editor-core .note-link {
+    border-bottom: 2px dotted #f472b6;
+    cursor: help;
+    background-color: rgba(244, 114, 182, 0.05);
+}
+.dark-mode-active .editor-core .note-link {
+    border-bottom-color: #fb7185;
+    background-color: rgba(251, 113, 133, 0.1);
+}
+
+/* 🌸 中文注释：悬浮批注卡片的动画 */
+@keyframes noteFadeIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.note-popup {
+    animation: noteFadeIn 0.2s ease-out;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* 🌸 中文注释：格式移除小气泡的样式 */
+.remover-popup {
+    animation: noteFadeIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+    pointer-events: auto;
+}
+/* 🌸 中文注释：删除格式的“小垃圾桶”按钮 - 调至“小中小”尺寸，极简不占位 */
+.remover-btn {
+    background: #ff4757;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    transition: all 0.2s;
+    border: 1.5px solid white;
+}
+.remover-btn:active {
+    transform: scale(0.85);
+    background: #ff6b81;
+}
+
+/* 🌸 中文注释：给查词气泡加一个呼吸感边缘，拖动时更显眼 */
+.cursor-move:active {
+    background-color: #e0e7ff !important;
+}
+
+/* ========================================== */
+/* 🌸 2. 核心排版样式 */
+/* ========================================== */
+/* 🌸 中文注释：[新增] 图片的三种 Word 式排版模式 */
+/* 1. 默认：独占一行，居中 */
+.editor-core img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* 默认 Break 模式 */
+    display: block;
+    margin: 10px auto; 
+}
+.editor-core img:hover {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); /* 鼠标悬停时显示个框 */
+}
+/* 选中状态（编辑时） */
+.editor-core img.img-active {
+    box-shadow: 0 0 0 3px #6366f1;
+}
+
+/* 2. 左环绕 */
+.editor-core img.layout-left {
+    float: left;
+    margin: 0 15px 10px 0;
+    max-width: 50%;
+}
+
+/* 3. 右环绕 */
+.editor-core img.layout-right {
+    float: right;
+    margin: 0 0 10px 15px;
+    max-width: 50%;
+}
+
+/* 4. 嵌入行内 (像表情包一样) */
+.editor-core img.layout-inline {
+    display: inline-block;
+    margin: 0 4px;
+    vertical-align: middle;
+    max-width: 100px; /* 行内模式不宜太大 */
+}
+/* 🌸 [修复版] 核心排版样式 - 根治样式污染与行距过大 */
+.editor-core { 
+    line-height: 1.75; /* 🌸 稍微调小行高，更紧凑 */
+    font-size: 16px; 
+    color: #4a4a4a; 
+}
+@media (max-width: 768px) {
+    .editor-core { font-size: 15px; line-height: 1.6; }
+}
+.editor-core:focus, .editor-wrapper:focus, [contenteditable]:focus {
+    outline: none !important;
+}
+
+/* 标题样式 - H1 (居中大标题) */
+.editor-core h1 { 
+    font-family: 'Quicksand', sans-serif; font-weight: 600; font-size: 2.2em; color: #ec4899; 
+    margin: 1em 0 0.8em; text-align: center; letter-spacing: 0.5px;
+    text-shadow: 1.5px 1.5px 0px rgba(236, 72, 153, 0.15);
+    page-break-after: avoid; 
+    cursor: pointer; position: relative;
+}
+
+/* 🌸 [终极适配版] H2 标题样式 */
+/* --- 白天模式：高对比度，确保看得清 --- */
+.editor-core h2 { 
+    font-family: 'Quicksand', sans-serif; font-size: 1.5em; font-weight: 700; 
+    color: #374151; /* 🌸 深灰色，保证白天模式辨识度 */
+    margin: 1.2em 0 0.6em; 
+    border-left: 5px solid #f472b6; /* 🌸 经典粉色边框 */
+    padding-left: 12px; 
+    background: linear-gradient(to right, #fdf2f8, transparent); /* 🌸 极淡的粉色渐变 */
+    page-break-after: avoid;
+    cursor: pointer; position: relative;
+}
+
+/* --- 黑夜模式：极简紫色，去油腻 --- */
+.dark-mode-active .editor-core h2 {
+    background: transparent !important; 
+    color: #e0e7ff !important; /* 🌸 浅靛蓝，黑夜模式的浪漫感 */
+    border-left: 5px solid #818cf8 !important; /* 🌸 紫色竖杠 */
+    padding-left: 12px !important;
+    text-shadow: none !important;
+}
+
+/* 🌸 [修复版] H1 和 H3 在黑夜模式下的色系同步 */
+
+/* H1 夜间：极光靛蓝 */
+.dark-mode-active .editor-core h1 {
+    color: #c7d2fe !important; 
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3) !important; 
+}
+
+/* H3 夜间：清爽紫罗兰 */
+.dark-mode-active .editor-core h3 {
+    color: #a5b4fc !important; 
+    text-shadow: none !important;
+}
+
+/* 🌸 [修复] 调整旋转角度，确保樱花变紫不显绿 */
+.dark-mode-active .editor-core h3::before {
+    /* 250度旋转能跨越绿色，达到与 H2 同色系的靛紫色 */
+    filter: hue-rotate(250deg) brightness(1.1) saturate(0.8); 
+    opacity: 0.8;
+}
+
+/* 标题样式 - H3 (带花朵的小标题) */
+/* 🌸 [关键修复] 移除 display: flex，回归正常的块级元素，防止清除格式时炸裂 */
+.editor-core h3 { 
+    font-size: 1.25em; font-weight: 700; color: #db2777; 
+    margin: 1em 0 0.5em; 
+    text-shadow: 1px 1px 0px rgba(219, 39, 119, 0.1);
+    page-break-after: avoid; 
+    line-height: 1.4;
+    display: block; /* 回归本源 */
+}
+/* 🌸 [关键修复] 花朵改为内联块，用 vertical-align 对齐，不干扰布局 */
+.editor-core h3::before { 
+    content: '🌸'; 
+    margin-right: 6px; 
+    font-size: 0.9em; 
+    display: inline-block;
+    vertical-align: middle;
+    transform: translateY(-2px); /* 微调位置 */
+}
+
+/* 折叠箭头逻辑 (保持不变，但适配新布局) */
+.editor-core h1::after, .editor-core h2::after {
+    content: '▼'; position: absolute; left: -25px; top: 50%;
+    transform: translateY(-50%); font-size: 12px; color: #cbd5e1;
+    opacity: 0; transition: all 0.2s;
+}
+.editor-core h1:hover::after, .editor-core h2:hover::after,
+.editor-core h1.collapsed::after, .editor-core h2.collapsed::after { opacity: 1; }
+.editor-core h1.collapsed::after, .editor-core h2.collapsed::after {
+    transform: translateY(-50%) rotate(-90deg); color: #94a3b8;
+}
+.editor-core h1.collapsed, .editor-core h2.collapsed {
+    color: #94a3b8 !important; border-left-color: #cbd5e1 !important;
+}
+
+/* 🌸 [关键修复] 基础段落 - 缩小间距，解决“清除格式后空行太大”的问题 */
+.editor-core p { 
+    margin-bottom: 0.8em; /* 从 1.5em 降为 0.8em，更紧凑 */
+    min-height: 1.5em; /* 保证空行也能被点到 */
+} 
+
+/* 🌸 [关键修复] 列表 - 优化缩进 */
+.editor-core ul, .editor-core ol { 
+    padding-left: 1.4em; /* 稍微减小缩进 */
+    margin-bottom: 0.8em; 
+    list-style-position: outside; /* 序号放在外面，防止挤压文字 */
+}
+.editor-core ul { list-style-type: disc; }
+.editor-core ol { list-style-type: decimal; }
+.editor-core li { margin-bottom: 0.3em; } /* 列表项之间紧凑一点 */
+
+/* 🌸 中文注释：新增 Markdown 常用标签美化（解决 AI 导入后平铺直叙的问题） */
+/* 🌸 [修复] 无论是 Markdown 的 ** (strong) 还是 Ctrl+B 的 (b)，统统加粗变黑！ */
+.editor-core strong, .editor-core b { font-weight: 800; color: #111827 !important; }
+.editor-core em { font-style: italic; opacity: 0.9; }
+.editor-core blockquote { 
+    border-left: 5px solid #fbcfe8; 
+    padding: 0.5em 1em; 
+    background: rgba(251, 207, 232, 0.1); 
+    color: #9d174d; 
+    margin: 1.5em 0;
+    border-radius: 0 8px 8px 0;
+}
+.editor-core code { 
+    background: #f1f5f9; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    font-family: monospace; 
+    color: #4f46e5;
+    font-size: 0.9em;
+}
+.editor-core pre {
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 1.2em;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    line-height: 1.5;
+}
+
+/* ========================================== */
+/* 🌸 3. 布局与组件特殊调整 */
+/* ========================================== */
+/* 🌸 中文注释：适配 APK 顶部状态栏避让（安全区插入） */
+header {
+    /* 🌸 [优化] 间距缩减一半，平衡美观与防挡 */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 18px) !important;
+    margin-top: 0 !important;
+    /* 🌸 中文注释：在 padding 的基础上，额外给 header 一个最小高度保障 */
+    min-height: 80px !important; 
+    display: flex !important;
+    align-items: flex-end !important; /* 🌸 让按钮沉在下面，离顶端远一点 */
+    padding-bottom: 10px !important;
+    height: auto !important; /* 让高度随 padding 自动撑开 */
+    box-sizing: content-box !important;
+}
+
+/* 🌸 中文注释：[新增] 底部导航栏的安全区抬高 (防止误触系统手势条) */
+.safe-bottom-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px) !important; /* 额外抬高 18px */
+    height: auto !important; /* 高度自动撑开 */
+}
+
+/* 黑夜模式下的避让背景色保持一致 */
+.dark-mode-active header {
+    background-color: #000000 !important;
+}
+
+/* 🌸 中文注释：表格基础样式支撑 */
+.editor-core table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1.5em;
+    border: 1px solid #e5e7eb;
+}
+.editor-core th, .editor-core td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+    min-width: 50px;
+}
+.editor-core th {
+    background-color: #f9fafb;
+    font-weight: bold;
+}
+.dark-mode-active .editor-core table, 
+.dark-mode-active .editor-core th, 
+.dark-mode-active .editor-core td {
+    border-color: #374151;
+}
+.dark-mode-active .editor-core th {
+    background-color: #1f2937;
+}
+
+/* 荧光笔样式 */
+.editor-core span.hl-pink { background-color: #fbcfe8 !important; border-bottom: 2px solid #f9a8d4 !important; padding: 2px 0; }
+.editor-core span.hl-green { background-color: #bbf7d0 !important; border-bottom: 2px solid #86efac !important; padding: 2px 0; }
+.editor-core span.hl-blue { background-color: #bfdbfe !important; border-bottom: 2px solid #93c5fd !important; padding: 2px 0; }
+.editor-core span.hl-purple { background-color: #e9d5ff !important; border-bottom: 2px solid #d8b4fe !important; padding: 2px 0; }
+.editor-core span.hl-yellow { background-color: #fef08a !important; border-bottom: 2px solid #fde047 !important; padding: 2px 0; }
+
+/* 🌸 中文注释：温润版文字贴纸——使用深雅灰，平衡清晰度与舒适度 */
+.editor-core span.hl-shadow { 
+    color: #111827 !important; 
+    font-weight: 800 !important; 
+    text-shadow: 1px 1px 0px rgba(236, 72, 153, 0.25) !important; 
+    padding: 0 4px;
+}
+
+/* 挖空与背诵逻辑 */
+.editor-core .recite-point {
+    background-color: rgba(59, 130, 246, 0.12);
+    border-bottom: 2px dashed #3b82f6;
+    color: #1e40af;
+    padding: 0 4px;
+    margin: 0 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+    line-height: 1.4;
+}
+
+.study-active .editor-core .recite-point:not(.revealed) {
+    background-color: #3b82f6 !important; 
+    color: #3b82f6 !important;            
+    text-shadow: none !important;         
+    border-bottom-color: #3b82f6 !important;
+    cursor: help;
+    user-select: none;                    
+}
+
+.study-active .editor-core .recite-point:not(.revealed) * {
+    /* 🌸 中文注释：强制挖空内部所有元素（加粗、列表等）的文字与背景同色，实现彻底隐藏 */
+    color: inherit !important;
+    background-color: transparent !important;
+    text-shadow: none !important;
+    border: none !important;
+}
+
+.study-active .editor-core .recite-point.revealed {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+    border-bottom: 2px solid #bfdbfe !important;
+    animation: springIn 0.3s ease-out; 
+}
+
+@keyframes springIn {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 🌸 中文注释：搜索跳转后的临时高亮动画 */
+@keyframes search-flash {
+    0% { background-color: #fde047; box-shadow: 0 0 15px #fde047; transform: scale(1.1); }
+    100% { background-color: transparent; box-shadow: none; transform: scale(1); }
+}
+.search-target-highlight {
+    animation: search-flash 2s ease-out;
+    border-radius: 4px;
+    padding: 0 2px;
+    display: inline-block;
+}
+
+/* ========================================== */
+/* 🌸 4. PDF 导出专用样式 (修复空白+保留美观版) */
+/* ========================================== */
+#print-area {
+    /* 平时彻底隐藏，不占位 */
+    display: none; 
+}
+
+/* 当开始生成时，强制它覆盖在屏幕最上方 */
+#print-area.generating {
+    display: block !important;
+    position: absolute; /* 使用 absolute 而不是 fixed，防止截断 */
+    top: 0;
+    left: 0;
+    width: 100%; 
+    /* 🌸 关键：高度设为 auto，让内容自然撑开，否则只会截到一屏 */
+    height: auto; 
+    min-height: 100vh;
+    z-index: 99999; /* 确保在最顶层 */
+    background: white;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+/* 🌸 强制应用原本的编辑器样式 */
+#print-area.generating h1 { 
+    /* 保持你原本漂亮的标题样式，但稍微调整边距适应 A4 */
+    margin-top: 0 !important; 
+    padding-top: 20px;
+    page-break-after: avoid;
+}
+
+/* 🌸 确保每一章都另起一页 */
+.pdf-chapter {
+    page-break-after: always;
+    margin-bottom: 50px;
+}
+
+/* 🌸 修复：防止文字被图片或长公式切断 */
+#print-area img, #print-area svg {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+}
+
+/* ========================================== */
+/* 🌸 5. Anki 卡片盒 3D 效果与杂项交互 */
+/* ========================================== */
+.anki-container { perspective: 1200px; }
+.anki-card { 
+    position: relative; width: 100%; height: 100%; 
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+    transform-style: preserve-3d; cursor: pointer;
+}
+.anki-card.is-flipped { transform: rotateY(180deg); }
+.anki-face {
+    position: absolute; width: 100%; height: 100%; 
+    backface-visibility: hidden; 
+    display: flex; flex-direction: column; 
+    align-items: center; justify-content: center; 
+    padding: 2.5rem; border-radius: 1.5rem; text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+@media (max-width: 768px) {
+    .anki-face { padding: 1.5rem; }
+}
+.anki-front { background: white; border: 2px solid #e0e7ff; color: #1e293b; }
+.anki-back { 
+    background: #f8fafc; border: 2px solid #818cf8; color: #1e293b; 
+    transform: rotateY(180deg); 
+}
+
+.modal-enter { animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+@media (max-width: 768px) {
+    .custom-scrollbar::-webkit-scrollbar { display: none; }
+}
+@keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
