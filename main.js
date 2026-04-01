@@ -39,26 +39,43 @@ function App() {
         return () => window.removeEventListener('keydown', handleGlobalKeys);
     }, [view]);
 
-    const [data, setData] = useState(() => {
-        try {
-            if (typeof require !== 'undefined') {
-                const fs = require('fs');
-                const path = require('path');
-                const savePath = path.join(process.cwd(), 'my_data.json');
-                if (fs.existsSync(savePath)) {
-                    const fileData = fs.readFileSync(savePath, 'utf-8');
-                    console.log('✅ 已从硬盘加载数据');
-                    return JSON.parse(fileData);
+    // 🌸 修改：初始状态先使用默认数据垫底，防止白屏
+    const [data, setData] = useState(typeof defaultData !== 'undefined' ? defaultData : { notebooks: [], cards: [] });
+    // 🌸 新增：标记数据是否已经从数据库加载完成
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+    // 🌸 新增：组件挂载后，异步去大容量数据库里捞数据
+    useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                // 1. 优先检查 Electron 硬盘环境
+                if (typeof require !== 'undefined') {
+                    const fs = require('fs');
+                    const path = require('path');
+                    const savePath = path.join(process.cwd(), 'my_data.json');
+                    if (fs.existsSync(savePath)) {
+                        const fileData = fs.readFileSync(savePath, 'utf-8');
+                        setData(JSON.parse(fileData));
+                        setIsDataLoaded(true);
+                        return;
+                    }
                 }
+                
+                // 2. 网页端环境：从无容量限制的 localForage 读取
+                if (typeof localforage !== 'undefined') {
+                    const local = await localforage.getItem('lazyNoteV10Data');
+                    if (local) {
+                        setData(local);
+                    }
+                }
+            } catch (err) {
+                console.error('大容量数据库读取失败:', err);
+            } finally {
+                setIsDataLoaded(true);
             }
-            const local = JSON.parse(localStorage.getItem('lazyNoteV10Data'));
-            if (local) return local;
-            return defaultData; // defaultData 来自 data.js
-        } catch (err) {
-            console.error('加载失败，返回默认值:', err);
-            return defaultData;
-        }
-    });
+        };
+        loadInitialData();
+    }, []);
 
     const [activeNbId, setActiveNbId] = useState(null);
     const [activePageId, setActivePageId] = useState(null);
@@ -136,17 +153,34 @@ function App() {
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
-    useEffect(() => { 
-        localStorage.setItem('lazyNoteV10Data', JSON.stringify(data)); 
+// ==========================================
+    // 🌸 核心数据持久化逻辑 (已彻底更换为大型数据库方案)
+    // ==========================================
+    useEffect(() => {
+        // 确保只有在数据加载完成后才触发保存，防止把初始空数据给存进去
+        if (!isDataLoaded) return; 
+
+        // 1. 网页端：使用 localForage 保存到大容量 IndexedDB 
+        // (注：它支持直接存对象，不需要 JSON.stringify，且完全突破 5MB 限制)
+        if (typeof localforage !== 'undefined') {
+            localforage.setItem('lazyNoteV10Data', data).catch(err => {
+                console.error('❌ 大容量存储写入失败:', err);
+                alert('存储失败！可能是你的浏览器或设备硬盘空间已满。');
+            });
+        }
+
+        // 2. Electron 端：保持原样的本地硬盘写入
         if (typeof require !== 'undefined') {
             try {
                 const fs = require('fs');
                 const path = require('path');
                 const savePath = path.join(process.cwd(), 'my_data.json');
                 fs.writeFileSync(savePath, JSON.stringify(data, null, 2), 'utf-8');
-            } catch (err) { console.error('硬盘保存失败:', err); }
+            } catch (err) { 
+                console.error('硬盘保存失败:', err); 
+            }
         }
-    }, [data]);
+    }, [data, isDataLoaded]);
 
     const updateWindowState = (key, newState) => {
         setData(prev => ({
