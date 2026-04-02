@@ -266,28 +266,25 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
     const contentRef = useRef(null);
     const savedRange = useRef(null);
 
+    // 🌸 修改：侧边栏大纲提取支持 H4 并使用全新折叠算法
     const extractOutline = () => {
         if (!contentRef.current) return [];
-        const headers = contentRef.current.querySelectorAll('h1, h2, h3');
+        const headers = contentRef.current.querySelectorAll('h1, h2, h3, h4');
         const outline = [];
-        let currentH1Folded = false;
-        let currentH2Folded = false;
+        let activeSidebarFoldLevel = 99;
 
         headers.forEach((h, i) => {
             h.id = `heading-${i}`;
             const tag = h.tagName.toUpperCase();
+            const level = parseInt(tag[1]);
             const isFoldedInSidebar = sidebarFoldedIds.has(h.id);
-            let isVisible = true;
+            
+            if (level <= activeSidebarFoldLevel) activeSidebarFoldLevel = 99;
+            
+            const isVisible = activeSidebarFoldLevel === 99;
 
-            if (tag === 'H1') {
-                isVisible = true;
-                currentH1Folded = isFoldedInSidebar;
-                currentH2Folded = false;
-            } else if (tag === 'H2') {
-                isVisible = !currentH1Folded;
-                currentH2Folded = isFoldedInSidebar;
-            } else if (tag === 'H3') {
-                isVisible = !currentH1Folded && !currentH2Folded;
+            if (isFoldedInSidebar && isVisible) {
+                activeSidebarFoldLevel = level;
             }
 
             outline.push({ id: h.id, tag: tag, collapsed: isFoldedInSidebar, text: h.innerText || '无标题', el: h, isVisible: isVisible });
@@ -536,19 +533,36 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
         }
     };
 
+    // 🌸 修改：修复折叠逻辑并支持到 H4
     const handleFoldClick = (e) => {
         const target = e.target;
-        if (!['H1', 'H2'].includes(target.tagName)) return;
+        if (!['H1', 'H2', 'H3', 'H4'].includes(target.tagName)) return;
         const rect = target.getBoundingClientRect();
         if (e.clientX > rect.left + 20) return;
+        
         target.classList.toggle('collapsed');
-        const isCollapsed = target.classList.contains('collapsed');
-        const level = parseInt(target.tagName[1]);
-        let next = target.nextElementSibling;
-        while (next) {
-            if (/^H[1-6]$/.test(next.tagName)) { const nextLevel = parseInt(next.tagName[1]); if (nextLevel <= level) break; }
-            if (isCollapsed) { next.setAttribute('data-original-display', next.style.display); next.style.display = 'none'; } else { next.style.display = next.getAttribute('data-original-display') || ''; }
-            next = next.nextElementSibling;
+        
+        // 重新从头到尾计算所有节点的显示状态，完美解决层级嵌套问题
+        let currentElement = target.parentElement.firstElementChild;
+        let activeFoldLevel = 99;
+
+        while (currentElement) {
+            if (/^H[1-6]$/.test(currentElement.tagName)) {
+                const level = parseInt(currentElement.tagName[1]);
+                // 遇到同级或更高级标题，脱离当前折叠影响
+                if (level <= activeFoldLevel) activeFoldLevel = 99;
+                
+                // 执行显示或隐藏
+                currentElement.style.display = activeFoldLevel < 99 ? 'none' : '';
+
+                // 如果自己带有折叠标记，且当前未被上级隐藏，则成为新的折叠源
+                if (currentElement.classList.contains('collapsed') && activeFoldLevel === 99) {
+                    activeFoldLevel = level;
+                }
+            } else {
+                currentElement.style.display = activeFoldLevel < 99 ? 'none' : '';
+            }
+            currentElement = currentElement.nextElementSibling;
         }
     };
 
@@ -702,12 +716,15 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
                             <Btn text="H1" onClick={()=>applyHeading('H1')} />
                             <Btn text="H2" onClick={()=>applyHeading('H2')} />
                             <Btn text="H3" onClick={()=>applyHeading('H3')} />
+                            {/* 🌸 新增：H4 按钮 */}
+                            <Btn text="H4" onClick={()=>applyHeading('H4')} />
+                            {/* 🌸 修改：正文清除格式时加上对 H4 的识别 */}
                             <Btn text="正文" onClick={() => {
                                 const sel = window.getSelection();
                                 if (sel.rangeCount > 0) {
                                     const range = sel.getRangeAt(0); let block = range.commonAncestorContainer;
                                     while (block && block.nodeType === 3) block = block.parentNode;
-                                    while (block && !['P','DIV','H1','H2','H3','LI','BLOCKQUOTE'].includes(block.nodeName) && block !== contentRef.current) { block = block.parentNode; }
+                                    while (block && !['P','DIV','H1','H2','H3','H4','LI','BLOCKQUOTE'].includes(block.nodeName) && block !== contentRef.current) { block = block.parentNode; }
                                     if(block && block !== contentRef.current) { const newRange = document.createRange(); newRange.selectNodeContents(block); sel.removeAllRanges(); sel.addRange(newRange); }
                                 }
                                 resetBlock(); sel.collapseToEnd(); showToast('格式已复原', 'success');
@@ -832,12 +849,14 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
                                     </div>
                                     {extractOutline().filter(item => item.isVisible).length > 0 ? extractOutline().filter(item => item.isVisible).map((item, idx) => (
                                         <div key={item.id} className="group relative flex items-center">
-                                            {['H1', 'H2'].includes(item.tag) && (
-                                                <div className="absolute w-8 h-full z-10 flex items-center justify-center cursor-pointer transition-all" style={{ left: item.tag === 'H1' ? '0' : '1.5rem' }} onClick={(e) => { e.stopPropagation(); const newSet = new Set(sidebarFoldedIds); if (newSet.has(item.id)) newSet.delete(item.id); else newSet.add(item.id); setSidebarFoldedIds(newSet); }}>
+                                            {/* 🌸 修改：允许 H1~H3 点击折叠（H4 作为最底层不折叠） */}
+                                            {['H1', 'H2', 'H3'].includes(item.tag) && (
+                                                <div className="absolute w-8 h-full z-10 flex items-center justify-center cursor-pointer transition-all" style={{ left: item.tag === 'H1' ? '0' : item.tag === 'H2' ? '1.5rem' : '3rem' }} onClick={(e) => { e.stopPropagation(); const newSet = new Set(sidebarFoldedIds); if (newSet.has(item.id)) newSet.delete(item.id); else newSet.add(item.id); setSidebarFoldedIds(newSet); }}>
                                                     <i className={`fas fa-caret-down text-[10px] transition-transform duration-200 ${item.collapsed ? '-rotate-90 text-indigo-300' : 'text-indigo-500'}`}></i>
                                                 </div>
                                             )}
-                                            <button onClick={() => { if (isOutlineEditMode) return; item.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); item.el.classList.add('search-target-highlight'); setTimeout(() => item.el.classList.remove('search-target-highlight'), 2000); if(window.innerWidth < 768) setShowSidebar(false); }} className={`w-full text-left py-2 px-3 pl-8 pr-4 rounded-lg text-xs hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center ${item.tag === 'H1' ? 'font-bold text-gray-700' : 'text-gray-500'}`} style={{ marginLeft: item.tag === 'H1' ? '0' : item.tag === 'H2' ? '1.5rem' : '2.8rem', borderLeft: item.tag === 'H1' ? '3px solid #e0e7ff' : 'none' }}>
+                                            {/* 🌸 修改：增加 H4 的缩进层级 */}
+                                            <button onClick={() => { if (isOutlineEditMode) return; item.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); item.el.classList.add('search-target-highlight'); setTimeout(() => item.el.classList.remove('search-target-highlight'), 2000); if(window.innerWidth < 768) setShowSidebar(false); }} className={`w-full text-left py-2 px-3 pl-8 pr-4 rounded-lg text-xs hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center ${item.tag === 'H1' ? 'font-bold text-gray-700' : 'text-gray-500'}`} style={{ marginLeft: item.tag === 'H1' ? '0' : item.tag === 'H2' ? '1.5rem' : item.tag === 'H3' ? '3rem' : '4.5rem', borderLeft: item.tag === 'H1' ? '3px solid #e0e7ff' : 'none' }}>
                                                 {isOutlineEditMode ? (
                                                     <input className="flex-1 bg-white/50 border-b border-indigo-200 outline-none text-gray-700 px-1 focus:bg-white transition-all" value={item.text} autoFocus onClick={(e) => e.stopPropagation()} onChange={(e) => { const newText = e.target.value; item.el.innerText = newText; handleInput(false, true); }} />
                                                 ) : (
@@ -1511,7 +1530,24 @@ function ModalContainer({ config, onClose }) {
     const [val1, setVal1] = useState(config.oldName || config.defaultVal1 || '');
     const [val2, setVal2] = useState(config.type === 'card' ? (config.defaultVal2 || '') : (config.colorIdx || 0));
     const [val3, setVal3] = useState(config.defaultVal3 || '默认分类');
-
+// 🌸 新增：处理跨笔记本移动笔记的弹窗界面
+    if (config.type === 'movePage') {
+        return (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay" onClick={onClose}>
+                <div className="bg-white rounded-2xl shadow-2xl w-[80%] md:w-80 p-6 md:p-8 modal-enter" onClick={e => e.stopPropagation()}>
+                    <h3 className="text-lg font-bold text-gray-800 mb-6 text-center">{config.title}</h3>
+                    <div className="space-y-2 mb-8 max-h-60 overflow-y-auto custom-scrollbar">
+                        {config.notebooks.map(nb => (
+                            <button key={nb.id} onClick={() => { config.onConfirm(nb.id); onClose(); }} className="w-full text-left px-4 py-3 rounded-xl hover:bg-indigo-50 text-gray-600 font-bold transition flex items-center justify-between">
+                                <span>{nb.name}</span><i className="fas fa-arrow-right-to-bracket text-[10px] opacity-30 text-indigo-500"></i>
+                            </button>
+                        ))}
+                    </div>
+                    <button onClick={onClose} className="w-full py-2 text-gray-400 font-bold hover:bg-gray-50 rounded-xl transition">取消移动</button>
+                </div>
+            </div>
+        );
+    }
     if (config.type === 'editDeck') {
         return (
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay" onClick={onClose}>
@@ -1716,6 +1752,26 @@ function NotebookView({ notebook, onBack, onOpenPage, setModal, setData, fullDat
                                 <h3 className="font-bold text-gray-700 line-clamp-1">{p.title}</h3>
                             </div>
                             <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition shrink-0">
+                                {/* 🌸 新增：移动笔记按钮 */}
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    setModal({
+                                        type: 'movePage',
+                                        title: '将笔记移动至...',
+                                        notebooks: fullData.notebooks.filter(n => n.id !== notebook.id), // 过滤掉当前笔记本
+                                        onConfirm: (targetNbId) => {
+                                            const newData = { ...fullData };
+                                            const sourceNb = newData.notebooks.find(n => n.id === notebook.id);
+                                            const targetNb = newData.notebooks.find(n => n.id === targetNbId);
+                                            const pageIndex = sourceNb.pages.findIndex(pg => pg.id === p.id);
+                                            if (pageIndex > -1 && targetNb) {
+                                                const [movedPage] = sourceNb.pages.splice(pageIndex, 1);
+                                                targetNb.pages.push(movedPage);
+                                                setData(newData);
+                                            }
+                                        }
+                                    });
+                                }} className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-sky-50 text-sky-400 rounded-lg transition" title="移动到其他笔记本"><i className="fas fa-exchange-alt text-xs"></i></button>
                                 <button onClick={(e) => { e.stopPropagation(); setModal({ type: 'input', title: '重命名章节', defaultVal1: p.title, onConfirm: (newTitle) => { if(!newTitle) return; const newData = {...fullData}; const nb = newData.notebooks.find(n => n.id === notebook.id); const pg = nb?.pages.find(pg => pg.id === p.id); if(pg) pg.title = newTitle; setData(newData); } }); }} className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-indigo-50 text-indigo-400 rounded-lg transition"><i className="fas fa-pen text-xs"></i></button>
                                 <button onClick={(e)=>{ e.stopPropagation(); setModal({type:'confirm', title:'删除章节', msg:'将移至回收站', onConfirm:()=>onMoveToTrash('page', p, notebook.id)}); }} className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-rose-50 text-rose-400 rounded-lg transition"><i className="fas fa-trash-can text-xs"></i></button>
                             </div>
