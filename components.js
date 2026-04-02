@@ -533,7 +533,7 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
         }
     };
 
-    // 🌸 修改：修复折叠逻辑并支持到 H4
+    // 🌸 核心修改：完美修复嵌套折叠与乱序折叠问题
     const handleFoldClick = (e) => {
         const target = e.target;
         if (!['H1', 'H2', 'H3', 'H4'].includes(target.tagName)) return;
@@ -542,28 +542,51 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
         
         target.classList.toggle('collapsed');
         
-        // 重新从头到尾计算所有节点的显示状态，完美解决层级嵌套问题
-        let currentElement = target.parentElement.firstElementChild;
+        const root = target.closest('.editor-core');
+        if (!root) return;
+
+        // 【关键修复】获取所有视觉上的块级元素，将包含标题的“包装盒”打平
+        // 这样可以避免折叠时误伤整个父容器，确保只严格折叠到下一个同级标题
+        const getBlocks = () => {
+            const blocks = [];
+            const traverse = (parent) => {
+                Array.from(parent.children).forEach(child => {
+                    const hasHeading = child.querySelector('h1, h2, h3, h4, h5, h6') !== null;
+                    const isHeading = /^H[1-6]$/.test(child.tagName);
+                    // 如果这个元素是个包装盒且里面装了标题，就钻进去继续找
+                    if (hasHeading && !isHeading) {
+                        traverse(child); 
+                    } else {
+                        // 如果它本身就是标题，或者是纯文本内容块，就作为一个独立的处理单元
+                        blocks.push(child); 
+                    }
+                });
+            };
+            traverse(root);
+            return blocks;
+        };
+
+        const blocks = getBlocks();
         let activeFoldLevel = 99;
 
-        while (currentElement) {
-            if (/^H[1-6]$/.test(currentElement.tagName)) {
-                const level = parseInt(currentElement.tagName[1]);
-                // 遇到同级或更高级标题，脱离当前折叠影响
+        blocks.forEach(block => {
+            if (/^H[1-6]$/.test(block.tagName)) {
+                const level = parseInt(block.tagName[1]);
+                // 遇到同级或更高级标题，说明上一个折叠区间结束了，脱离折叠影响
                 if (level <= activeFoldLevel) activeFoldLevel = 99;
                 
-                // 执行显示或隐藏
-                currentElement.style.display = activeFoldLevel < 99 ? 'none' : '';
+                // 标题本身的可见性由 activeFoldLevel 决定
+                block.style.display = activeFoldLevel < 99 ? 'none' : '';
 
-                // 如果自己带有折叠标记，且当前未被上级隐藏，则成为新的折叠源
-                if (currentElement.classList.contains('collapsed') && activeFoldLevel === 99) {
+                // 如果这个标题自己也被点击折叠了，且当前未被上级隐藏，则成为新的折叠源头
+                if (block.classList.contains('collapsed') && activeFoldLevel === 99) {
                     activeFoldLevel = level;
                 }
             } else {
-                currentElement.style.display = activeFoldLevel < 99 ? 'none' : '';
+                // 非标题的正文内容，严格跟随当前的折叠层级
+                block.style.display = activeFoldLevel < 99 ? 'none' : '';
             }
-            currentElement = currentElement.nextElementSibling;
-        }
+        });
     };
 
     useEffect(() => {
