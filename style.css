@@ -523,3 +523,35 @@ header {
     .custom-scrollbar::-webkit-scrollbar { display: none; }
 }
 @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ========================================== */
+/* 🌸 新增与调整：正文 H1-H4 标题字号与间距优化 */
+/* ========================================== */
+
+/* 稍微缩小前三级标题的字号，并加上 !important 强制覆盖旧设定 */
+.editor-core h1 {
+    font-size: 1.5em !important; 
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+}
+
+.editor-core h2 {
+    font-size: 1.3em !important;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.editor-core h3 {
+    font-size: 1.1em !important;
+    margin-top: 0.8em;
+    margin-bottom: 0.4em;
+}
+
+/* H4 的特殊格式：字号比正文略大一点点，加粗并带一点主题色以作区分 */
+.editor-core h4 {
+    font-size: 1.05em !important;
+    font-weight: bold !important;
+    color: #4f46e5 !important; /* Indigo 主题色 */
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+}
