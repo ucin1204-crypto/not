@@ -188,73 +188,72 @@ html, body {
 }
 
 /* ========================================== */
-/* 🌸 莫兰迪配色增强版：H1-H4 标题样式 */
+/* 🌸 莫兰迪统一色系方案：深豆沙粉系列 */
 /* ========================================== */
 
-/* --- H1: 雾霾蓝 (Dusty Blue) --- */
+/* 统一变量：文字深粉色 #A67267，底色浅粉色 #B9887D 的透明版 */
+
+/* --- H1: 居中大标题 (最深，无底色) --- */
 .editor-core h1 { 
-    font-family: 'Quicksand', sans-serif; font-weight: 600; 
+    font-family: 'Quicksand', sans-serif; font-weight: 700; 
     font-size: 1.5em !important; 
-    color: #788CB6 !important; /* 莫兰迪蓝 */
-    margin: 1.2em 0 0.6em !important; text-align: center; letter-spacing: 0.5px;
-    text-shadow: 1px 1px 0px rgba(120, 140, 182, 0.15) !important;
+    color: #96645A !important; /* 深度豆沙粉 */
+    margin: 1.2em 0 0.8em !important; text-align: center; 
+    letter-spacing: 1px;
+    text-shadow: none !important;
     page-break-after: avoid; cursor: pointer; position: relative;
 }
-.dark-mode-active .editor-core h1 {
-    color: #94a3b8 !important; /* 暗色莫兰迪蓝 */
-    text-shadow: none !important;
-}
 
-/* --- H2: 豆沙粉 (Muted Rose) --- */
+/* --- H2: 标准侧边栏标题 (带渐变底色) --- */
 .editor-core h2 { 
     font-family: 'Quicksand', sans-serif; 
     font-size: 1.15em !important; font-weight: 700; 
-    color: #B9887D !important; /* 莫兰迪红 */
-    margin: 1.1em 0 0.5em !important; 
-    border-left: 5px solid #B9887D !important; 
-    padding-left: 12px !important; 
-    background: linear-gradient(to right, rgba(185, 136, 125, 0.1), transparent) !important;
+    color: #A67267 !important; /* 加深豆沙粉 */
+    margin: 1.1em 0 0.6em !important; 
+    border-left: 5px solid #B9887D !important; /* 莫兰迪粉原色竖杠 */
+    padding: 4px 12px !important; 
+    background: linear-gradient(to right, rgba(185, 136, 125, 0.15), transparent) !important; /* 浅色底色不变 */
     page-break-after: avoid; cursor: pointer; position: relative;
 }
-.dark-mode-active .editor-core h2 {
-    background: transparent !important; 
-    color: #d1b1aa !important; /* 暗色豆沙粉 */
-    border-left-color: #a67b72 !important;
-}
 
-/* --- H3: 橄榄绿 (Sage Green) --- */
+/* --- H3: 带花朵的小标题 (中等深度) --- */
 .editor-core h3 { 
     font-size: 1.1em !important; font-weight: 700; 
-    color: #8F9B82 !important; /* 莫兰迪绿 */
-    margin: 1em 0 0.4em !important; 
-    text-shadow: none !important;
-    page-break-after: avoid; line-height: 1.4; display: block;
+    color: #B27D72 !important; 
+    margin: 1em 0 0.5em !important; 
+    padding: 2px 8px !important;
+    background: rgba(185, 136, 125, 0.08) !important; /* 更浅一点的底色 */
+    border-radius: 4px;
+    display: block; 
 }
 .editor-core h3::before { 
-    content: '🍂'; /* 换成了更搭莫兰迪色的叶子，你也可以改回🌸 */
-    margin-right: 6px; font-size: 0.9em; display: inline-block;
-    vertical-align: middle; transform: translateY(-1px);
-}
-.dark-mode-active .editor-core h3 {
-    color: #adbca0 !important; /* 暗色橄榄绿 */
-}
-.dark-mode-active .editor-core h3::before {
-    filter: grayscale(0.5) opacity(0.8); /* 让小图标在黑夜模式下不刺眼 */
+    content: '🌸'; 
+    margin-right: 6px; opacity: 0.8;
+    vertical-align: middle;
 }
 
-/* --- H4: 燕麦色 (Warm Taupe) --- */
+/* --- H4: 极简小标题 (最浅) --- */
 .editor-core h4 {
     font-size: 1.05em !important; font-weight: bold !important;
-    color: #A6958E !important; /* 莫兰迪灰褐 */
-    margin: 0.8em 0 0.3em !important;
-    border-bottom: 1px dashed #D6CCC2; /* 增加一个精致的下划线 */
-    display: inline-block; /* 让下划线只随文字长度 */
+    color: #B9887D !important; 
+    margin: 0.8em 0 0.4em !important;
+    border-bottom: 1px dashed rgba(185, 136, 125, 0.4); 
+    display: inline-block;
     padding-bottom: 2px;
 }
+
+/* --- 黑夜模式同步适配 --- */
+.dark-mode-active .editor-core h1,
+.dark-mode-active .editor-core h2,
+.dark-mode-active .editor-core h3,
 .dark-mode-active .editor-core h4 {
-    color: #c2b5b0 !important;
-    border-bottom-color: #4b4b4b;
+    background: transparent !important;
+    text-shadow: none !important;
 }
+.dark-mode-active .editor-core h1 { color: #d1b1aa !important; }
+.dark-mode-active .editor-core h2 { color: #c4a49e !important; border-left-color: #a67b72 !important; }
+.dark-mode-active .editor-core h3 { color: #b89690 !important; }
+.dark-mode-active .editor-core h4 { color: #ab8882 !important; border-bottom-color: #444 !important; }
 
 /* ========================================== */
 /* 🌸 3. 布局与组件特殊调整 */
