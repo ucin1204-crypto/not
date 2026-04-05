@@ -216,21 +216,7 @@ html, body {
     page-break-after: avoid; cursor: pointer; position: relative;
 }
 
-/* --- H3: 带花朵的小标题 (中等深度) --- */
-.editor-core h3 { 
-    font-size: 1.1em !important; font-weight: 700; 
-    color: #B27D72 !important; 
-    margin: 1em 0 0.5em !important; 
-    padding: 2px 8px !important;
-    background: rgba(185, 136, 125, 0.08) !important; /* 更浅一点的底色 */
-    border-radius: 4px;
-    display: block; 
-}
-.editor-core h3::before { 
-    content: '🌸'; 
-    margin-right: 6px; opacity: 0.8;
-    vertical-align: middle;
-}
+
 
 /* --- H4: 极简小标题 (最浅) --- */
 .editor-core h4 {
@@ -488,25 +474,30 @@ header {
     display: block !important;
 }
 
-/* 🌸 中文注释：彻底去油版 H3，确保没有任何背景色 */
+/* 🌸 中文注释：彻底去除 H3 所有背景、阴影和边框，只留文字和图标 */
 .editor-core h3 { 
     font-size: 1.1em !important; 
     font-weight: 700 !important; 
     color: #A67267 !important; 
     margin: 1.1em 0 0.5em !important; 
-    padding: 0 !important; 
-    /* 🌸 关键修正：强制背景透明并覆盖所有之前的定义 */
-    background: transparent !important; 
+    
+    /* 彻底清空背景相关的属性 */
+    background: none !important; 
     background-color: transparent !important;
+    box-shadow: none !important;
     border: none !important;
-    border-radius: 0 !important;
-    display: block !important;
+    
+    /* 缩减内边距，防止撑起空白区域 */
+    padding: 0 !important; 
+    display: flex !important; /* 改为 flex 让图标和文字对齐更精准 */
+    align-items: center !important;
 }
-/* 🌸 中文注释：H3 前置的小叶子图标 */
+
+/* 🌸 中文注释：H3 前置图标 */
 .editor-core h3::before { 
     content: '🍂' !important; 
-    margin-right: 6px; 
-    opacity: 0.9; 
+    margin-right: 8px !important; 
+    background: transparent !important; /* 确保图标自己也没背景 */
 }
 
 /* 🌸 中文注释：黑夜模式下的特殊处理，确保背景不反弹 */
