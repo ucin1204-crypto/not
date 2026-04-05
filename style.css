@@ -187,137 +187,73 @@ html, body {
     outline: none !important;
 }
 
-/* 标题样式 - H1 (居中大标题) */
+/* ========================================== */
+/* 🌸 莫兰迪配色增强版：H1-H4 标题样式 */
+/* ========================================== */
+
+/* --- H1: 雾霾蓝 (Dusty Blue) --- */
 .editor-core h1 { 
-    font-family: 'Quicksand', sans-serif; font-weight: 600; font-size: 2.2em; color: #ec4899; 
-    margin: 1em 0 0.8em; text-align: center; letter-spacing: 0.5px;
-    text-shadow: 1.5px 1.5px 0px rgba(236, 72, 153, 0.15);
-    page-break-after: avoid; 
-    cursor: pointer; position: relative;
+    font-family: 'Quicksand', sans-serif; font-weight: 600; 
+    font-size: 1.5em !important; 
+    color: #788CB6 !important; /* 莫兰迪蓝 */
+    margin: 1.2em 0 0.6em !important; text-align: center; letter-spacing: 0.5px;
+    text-shadow: 1px 1px 0px rgba(120, 140, 182, 0.15) !important;
+    page-break-after: avoid; cursor: pointer; position: relative;
+}
+.dark-mode-active .editor-core h1 {
+    color: #94a3b8 !important; /* 暗色莫兰迪蓝 */
+    text-shadow: none !important;
 }
 
-/* 🌸 [终极适配版] H2 标题样式 */
-/* --- 白天模式：高对比度，确保看得清 --- */
+/* --- H2: 豆沙粉 (Muted Rose) --- */
 .editor-core h2 { 
-    font-family: 'Quicksand', sans-serif; font-size: 1.5em; font-weight: 700; 
-    color: #374151; /* 🌸 深灰色，保证白天模式辨识度 */
-    margin: 1.2em 0 0.6em; 
-    border-left: 5px solid #f472b6; /* 🌸 经典粉色边框 */
-    padding-left: 12px; 
-    background: linear-gradient(to right, #fdf2f8, transparent); /* 🌸 极淡的粉色渐变 */
-    page-break-after: avoid;
-    cursor: pointer; position: relative;
+    font-family: 'Quicksand', sans-serif; 
+    font-size: 1.15em !important; font-weight: 700; 
+    color: #B9887D !important; /* 莫兰迪红 */
+    margin: 1.1em 0 0.5em !important; 
+    border-left: 5px solid #B9887D !important; 
+    padding-left: 12px !important; 
+    background: linear-gradient(to right, rgba(185, 136, 125, 0.1), transparent) !important;
+    page-break-after: avoid; cursor: pointer; position: relative;
 }
-
-/* --- 黑夜模式：极简紫色，去油腻 --- */
 .dark-mode-active .editor-core h2 {
     background: transparent !important; 
-    color: #e0e7ff !important; /* 🌸 浅靛蓝，黑夜模式的浪漫感 */
-    border-left: 5px solid #818cf8 !important; /* 🌸 紫色竖杠 */
-    padding-left: 12px !important;
-    text-shadow: none !important;
+    color: #d1b1aa !important; /* 暗色豆沙粉 */
+    border-left-color: #a67b72 !important;
 }
 
-/* 🌸 [修复版] H1 和 H3 在黑夜模式下的色系同步 */
-
-/* H1 夜间：极光靛蓝 */
-.dark-mode-active .editor-core h1 {
-    color: #c7d2fe !important; 
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3) !important; 
-}
-
-/* H3 夜间：清爽紫罗兰 */
-.dark-mode-active .editor-core h3 {
-    color: #a5b4fc !important; 
-    text-shadow: none !important;
-}
-
-/* 🌸 [修复] 调整旋转角度，确保樱花变紫不显绿 */
-.dark-mode-active .editor-core h3::before {
-    /* 250度旋转能跨越绿色，达到与 H2 同色系的靛紫色 */
-    filter: hue-rotate(250deg) brightness(1.1) saturate(0.8); 
-    opacity: 0.8;
-}
-
-/* 标题样式 - H3 (带花朵的小标题) */
-/* 🌸 [关键修复] 移除 display: flex，回归正常的块级元素，防止清除格式时炸裂 */
+/* --- H3: 橄榄绿 (Sage Green) --- */
 .editor-core h3 { 
-    font-size: 1.25em; font-weight: 700; color: #db2777; 
-    margin: 1em 0 0.5em; 
-    text-shadow: 1px 1px 0px rgba(219, 39, 119, 0.1);
-    page-break-after: avoid; 
-    line-height: 1.4;
-    display: block; /* 回归本源 */
+    font-size: 1.1em !important; font-weight: 700; 
+    color: #8F9B82 !important; /* 莫兰迪绿 */
+    margin: 1em 0 0.4em !important; 
+    text-shadow: none !important;
+    page-break-after: avoid; line-height: 1.4; display: block;
 }
-/* 🌸 [关键修复] 花朵改为内联块，用 vertical-align 对齐，不干扰布局 */
 .editor-core h3::before { 
-    content: '🌸'; 
-    margin-right: 6px; 
-    font-size: 0.9em; 
-    display: inline-block;
-    vertical-align: middle;
-    transform: translateY(-2px); /* 微调位置 */
+    content: '🍂'; /* 换成了更搭莫兰迪色的叶子，你也可以改回🌸 */
+    margin-right: 6px; font-size: 0.9em; display: inline-block;
+    vertical-align: middle; transform: translateY(-1px);
+}
+.dark-mode-active .editor-core h3 {
+    color: #adbca0 !important; /* 暗色橄榄绿 */
+}
+.dark-mode-active .editor-core h3::before {
+    filter: grayscale(0.5) opacity(0.8); /* 让小图标在黑夜模式下不刺眼 */
 }
 
-/* 折叠箭头逻辑 (保持不变，但适配新布局) */
-.editor-core h1::after, .editor-core h2::after {
-    content: '▼'; position: absolute; left: -25px; top: 50%;
-    transform: translateY(-50%); font-size: 12px; color: #cbd5e1;
-    opacity: 0; transition: all 0.2s;
+/* --- H4: 燕麦色 (Warm Taupe) --- */
+.editor-core h4 {
+    font-size: 1.05em !important; font-weight: bold !important;
+    color: #A6958E !important; /* 莫兰迪灰褐 */
+    margin: 0.8em 0 0.3em !important;
+    border-bottom: 1px dashed #D6CCC2; /* 增加一个精致的下划线 */
+    display: inline-block; /* 让下划线只随文字长度 */
+    padding-bottom: 2px;
 }
-.editor-core h1:hover::after, .editor-core h2:hover::after,
-.editor-core h1.collapsed::after, .editor-core h2.collapsed::after { opacity: 1; }
-.editor-core h1.collapsed::after, .editor-core h2.collapsed::after {
-    transform: translateY(-50%) rotate(-90deg); color: #94a3b8;
-}
-.editor-core h1.collapsed, .editor-core h2.collapsed {
-    color: #94a3b8 !important; border-left-color: #cbd5e1 !important;
-}
-
-/* 🌸 [关键修复] 基础段落 - 缩小间距，解决“清除格式后空行太大”的问题 */
-.editor-core p { 
-    margin-bottom: 0.8em; /* 从 1.5em 降为 0.8em，更紧凑 */
-    min-height: 1.5em; /* 保证空行也能被点到 */
-} 
-
-/* 🌸 [关键修复] 列表 - 优化缩进 */
-.editor-core ul, .editor-core ol { 
-    padding-left: 1.4em; /* 稍微减小缩进 */
-    margin-bottom: 0.8em; 
-    list-style-position: outside; /* 序号放在外面，防止挤压文字 */
-}
-.editor-core ul { list-style-type: disc; }
-.editor-core ol { list-style-type: decimal; }
-.editor-core li { margin-bottom: 0.3em; } /* 列表项之间紧凑一点 */
-
-/* 🌸 中文注释：新增 Markdown 常用标签美化（解决 AI 导入后平铺直叙的问题） */
-/* 🌸 [修复] 无论是 Markdown 的 ** (strong) 还是 Ctrl+B 的 (b)，统统加粗变黑！ */
-.editor-core strong, .editor-core b { font-weight: 800; color: #111827 !important; }
-.editor-core em { font-style: italic; opacity: 0.9; }
-.editor-core blockquote { 
-    border-left: 5px solid #fbcfe8; 
-    padding: 0.5em 1em; 
-    background: rgba(251, 207, 232, 0.1); 
-    color: #9d174d; 
-    margin: 1.5em 0;
-    border-radius: 0 8px 8px 0;
-}
-.editor-core code { 
-    background: #f1f5f9; 
-    padding: 2px 6px; 
-    border-radius: 4px; 
-    font-family: monospace; 
-    color: #4f46e5;
-    font-size: 0.9em;
-}
-.editor-core pre {
-    background: #1e293b;
-    color: #f8fafc;
-    padding: 1.2em;
-    border-radius: 12px;
-    overflow-x: auto;
-    margin: 1.5em 0;
-    line-height: 1.5;
+.dark-mode-active .editor-core h4 {
+    color: #c2b5b0 !important;
+    border-bottom-color: #4b4b4b;
 }
 
 /* ========================================== */
