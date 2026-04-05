@@ -4,7 +4,10 @@
 html, body { 
     font-family: 'Noto Sans SC', sans-serif; 
     background-color: #fdfbf7; 
-    color: #111827; /* 🌸 修改为更深、更清晰的墨黑色，彻底解决视觉模糊感 */ 
+    /* 🌸 强制全局文字使用纯粹的深墨色，并略微加粗字重提升清晰度 */
+    color: #000000 !important; 
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow: hidden; 
     /* 🌸 中文注释：使用 dvh 动态高度，完美适配移动端地址栏伸缩，防止内容被遮挡 */
     height: 100dvh;
@@ -474,23 +477,20 @@ header {
     display: block !important;
 }
 
-/* 🌸 中文注释：彻底去除 H3 所有背景、阴影和边框，只留文字和图标 */
+/* 🌸 [彻底修复] H3 豆沙色强化版：排除所有灰色干扰 */
 .editor-core h3 { 
-    font-size: 1.1em !important; 
-    font-weight: 700 !important; 
-    color: #A67267 !important; 
-    margin: 1.1em 0 0.5em !important; 
-    
-    /* 彻底清空背景相关的属性 */
-    background: none !important; 
+    font-size: 1.15em !important; 
+    font-weight: 800 !important; /* 稍微加粗，让颜色更显眼 */
+    color: #A67267 !important; /* 核心豆沙色 */
+    margin: 1.2rem 0 0.6rem !important; 
+    background: transparent !important; 
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    
-    /* 缩减内边距，防止撑起空白区域 */
     padding: 0 !important; 
-    display: flex !important; /* 改为 flex 让图标和文字对齐更精准 */
+    display: flex !important; 
     align-items: center !important;
+    opacity: 1 !important; /* 防止被透明度影响显得发灰 */
 }
 
 /* 🌸 中文注释：H3 前置图标 */
@@ -500,12 +500,12 @@ header {
     background: transparent !important; /* 确保图标自己也没背景 */
 }
 
-/* 🌸 中文注释：黑夜模式下的特殊处理，确保背景不反弹 */
-.dark-mode-active .editor-core h2,
+/* 🌸 黑夜模式下，H3 应该使用更亮的豆沙粉，否则在黑色背景下会看不清 */
 .dark-mode-active .editor-core h3 {
     background: transparent !important;
     background-color: transparent !important;
-    color: #d1b1aa !important;
+    color: #E2B3A9 !important; /* 黑夜模式专用：提亮的豆沙色 */
+    text-shadow: none !important;
 }
 
 /* --- H4: 极简标题 --- */
