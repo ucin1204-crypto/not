@@ -4,7 +4,7 @@
 html, body { 
     font-family: 'Noto Sans SC', sans-serif; 
     background-color: #fdfbf7; 
-    color: #4a4a4a; 
+    color: #111827; /* 🌸 修改为更深、更清晰的墨黑色，彻底解决视觉模糊感 */ 
     overflow: hidden; 
     /* 🌸 中文注释：使用 dvh 动态高度，完美适配移动端地址栏伸缩，防止内容被遮挡 */
     height: 100dvh;
@@ -178,7 +178,7 @@ html, body {
 .editor-core { 
     line-height: 1.75; /* 🌸 稍微调小行高，更紧凑 */
     font-size: 16px; 
-    color: #4a4a4a; 
+    color: #111827; /* 🌸 核心正文同步加深 */ 
 }
 @media (max-width: 768px) {
     .editor-core { font-size: 15px; line-height: 1.6; }
@@ -491,17 +491,19 @@ header {
     border-left-color: #a67b72 !important;
 }
 
-/* --- H3: 带叶子标题 --- */
+/* --- H3: 极简🍂小标题 (已移除底色) --- */
 .editor-core h3 { 
     font-size: 1.1em !important; 
     font-weight: 700 !important; 
-    color: #B27D72 !important; 
-    margin: 1em 0 0.5em !important; 
-    padding: 2px 8px !important;
-    border-radius: 4px !important;
+    color: #A67267 !important; /* 加深文字色 */
+    margin: 1.1em 0 0.5em !important; 
+    padding: 0 !important; /* 移除内边距 */
+    background: transparent !important; /* 彻底移除底色块 */
+    border-radius: 0 !important;
     text-shadow: none !important;
+    display: block !important;
 }
-.editor-core h3::before { content: '🍂' !important; margin-right: 6px; opacity: 0.8; }
+.editor-core h3::before { content: '🍂' !important; margin-right: 6px; opacity: 0.9; }
 
 /* --- H4: 极简标题 --- */
 .editor-core h4 {
