@@ -474,36 +474,48 @@ header {
     text-shadow: none !important;
 }
 
-/* --- H2: 豆沙粉 (Muted Rose) --- */
+/* 🌸 中文注释：统一 H2 样式，保留左侧边框和微弱渐变 */
 .editor-core h2 { 
     font-family: 'Quicksand', sans-serif; 
-    font-size: 1.15em !important; font-weight: 700; 
-    color: #B9887D !important; /* 莫兰迪红 */
+    font-size: 1.15em !important; 
+    font-weight: 700 !important; 
+    color: #B9887D !important; 
     margin: 1.1em 0 0.5em !important; 
     border-left: 5px solid #B9887D !important; 
-    padding-left: 12px !important; 
+    padding: 4px 12px !important; 
+    /* 仅 H2 保留极其浅淡的渐变底色作为区分 */
     background: linear-gradient(to right, rgba(185, 136, 125, 0.1), transparent) !important;
-    page-break-after: avoid; cursor: pointer; position: relative;
-}
-.dark-mode-active .editor-core h2 {
-    background: transparent !important; 
-    color: #d1b1aa !important; /* 暗色豆沙粉 */
-    border-left-color: #a67b72 !important;
+    display: block !important;
 }
 
-/* --- H3: 极简🍂小标题 (已移除底色) --- */
+/* 🌸 中文注释：彻底去油版 H3，确保没有任何背景色 */
 .editor-core h3 { 
     font-size: 1.1em !important; 
     font-weight: 700 !important; 
-    color: #A67267 !important; /* 加深文字色 */
+    color: #A67267 !important; 
     margin: 1.1em 0 0.5em !important; 
-    padding: 0 !important; /* 移除内边距 */
-    background: transparent !important; /* 彻底移除底色块 */
+    padding: 0 !important; 
+    /* 🌸 关键修正：强制背景透明并覆盖所有之前的定义 */
+    background: transparent !important; 
+    background-color: transparent !important;
+    border: none !important;
     border-radius: 0 !important;
-    text-shadow: none !important;
     display: block !important;
 }
-.editor-core h3::before { content: '🍂' !important; margin-right: 6px; opacity: 0.9; }
+/* 🌸 中文注释：H3 前置的小叶子图标 */
+.editor-core h3::before { 
+    content: '🍂' !important; 
+    margin-right: 6px; 
+    opacity: 0.9; 
+}
+
+/* 🌸 中文注释：黑夜模式下的特殊处理，确保背景不反弹 */
+.dark-mode-active .editor-core h2,
+.dark-mode-active .editor-core h3 {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #d1b1aa !important;
+}
 
 /* --- H4: 极简标题 --- */
 .editor-core h4 {
