@@ -460,33 +460,66 @@ header {
 @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ========================================== */
-/* 🌸 新增与调整：正文 H1-H4 标题字号与间距优化 */
+/* 🌸 最终修正：统一深豆沙粉色系 (H1-H4) */
 /* ========================================== */
 
-/* 稍微缩小前三级标题的字号，并加上 !important 强制覆盖旧设定 */
-.editor-core h1 {
+/* --- H1: 居中大标题 --- */
+.editor-core h1 { 
+    font-family: 'Quicksand', sans-serif !important; 
+    font-weight: 700 !important; 
     font-size: 1.5em !important; 
-    margin-top: 1.2em;
-    margin-bottom: 0.6em;
+    color: #96645A !important; /* 深豆沙粉 */
+    margin: 1.2em 0 0.8em !important; 
+    text-align: center !important; 
+    text-shadow: none !important;
 }
 
-.editor-core h2 {
-    font-size: 1.1em !important;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
+/* --- H2: 豆沙粉 (Muted Rose) --- */
+.editor-core h2 { 
+    font-family: 'Quicksand', sans-serif; 
+    font-size: 1.15em !important; font-weight: 700; 
+    color: #B9887D !important; /* 莫兰迪红 */
+    margin: 1.1em 0 0.5em !important; 
+    border-left: 5px solid #B9887D !important; 
+    padding-left: 12px !important; 
+    background: linear-gradient(to right, rgba(185, 136, 125, 0.1), transparent) !important;
+    page-break-after: avoid; cursor: pointer; position: relative;
+}
+.dark-mode-active .editor-core h2 {
+    background: transparent !important; 
+    color: #d1b1aa !important; /* 暗色豆沙粉 */
+    border-left-color: #a67b72 !important;
 }
 
-.editor-core h3 {
-    font-size: 1.1em !important;
-    margin-top: 0.8em;
-    margin-bottom: 0.4em;
+/* --- H3: 带樱花标题 --- */
+.editor-core h3 { 
+    font-size: 1.1em !important; 
+    font-weight: 700 !important; 
+    color: #B27D72 !important; 
+    margin: 1em 0 0.5em !important; 
+    padding: 2px 8px !important;
+    background: rgba(185, 136, 125, 0.08) !important; 
+    border-radius: 4px !important;
+    text-shadow: none !important;
 }
+.editor-core h3::before { content: '🍂' !important; margin-right: 6px; opacity: 0.8; }
 
-/* H4 的特殊格式：字号比正文略大一点点，加粗并带一点主题色以作区分 */
+/* --- H4: 极简标题 --- */
 .editor-core h4 {
-    font-size: 1.05em !important;
+    font-size: 1.05em !important; 
     font-weight: bold !important;
-    color: #4f46e5 !important; /* Indigo 主题色 */
-    margin-top: 0.6em;
-    margin-bottom: 0.3em;
+    color: #B9887D !important; 
+    margin: 0.8em 0 0.4em !important;
+    border-bottom: 1px dashed rgba(185, 136, 125, 0.4) !important; 
+    display: inline-block !important;
+}
+
+/* --- 同步清理黑夜模式干扰 --- */
+.dark-mode-active .editor-core h1,
+.dark-mode-active .editor-core h2,
+.dark-mode-active .editor-core h3,
+.dark-mode-active .editor-core h4 {
+    background: transparent !important;
+    color: #d1b1aa !important; /* 统一为暗粉色 */
+    border-left-color: #a67b72 !important;
 }
