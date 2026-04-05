@@ -265,6 +265,8 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
     const [replaceQuery, setReplaceQuery] = useState('');
     const contentRef = useRef(null);
     const savedRange = useRef(null);
+    // 🌸 新增：用于在 Markdown 模式下定位纯文本框并执行搜索
+    const mdInputRef = useRef(null);
 
     // 🌸 修改：侧边栏大纲提取支持 H4 并使用全新折叠算法
     const extractOutline = () => {
@@ -462,6 +464,43 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
 
     const executeFind = (query) => {
         if (!query) return;
+        
+        // 🌸 新增：如果是 Markdown 模式，走纯文本匹配路线
+        if (isMdMode) {
+            const textarea = mdInputRef.current;
+            if (!textarea) return;
+            textarea.focus();
+            
+            const text = textarea.value.toLowerCase();
+            const searchTerm = query.toLowerCase();
+            
+            // 从当前光标位置开始往后找
+            let startPos = textarea.selectionEnd || 0;
+            let foundPos = text.indexOf(searchTerm, startPos);
+            
+            if (foundPos === -1) {
+                // 如果后面没了，折返回开头找
+                foundPos = text.indexOf(searchTerm, 0);
+                if (foundPos === -1) {
+                    showToast('未找到匹配内容', 'error');
+                    return false;
+                } else {
+                    showToast('已到文档末尾，从开头继续检索', 'info');
+                }
+            }
+            
+            // 选中找到的文本（实现高亮效果）
+            textarea.setSelectionRange(foundPos, foundPos + query.length);
+            
+            // 粗略计算行数滚动到可视区域
+            const textBefore = text.substring(0, foundPos);
+            const lineBreaks = (textBefore.match(/\n/g) || []).length;
+            textarea.scrollTop = lineBreaks * 24; // 假设每行大约24px
+            
+            return true;
+        }
+
+        // 🌸 原有逻辑：如果是富文本模式，走 DOM 匹配路线
         const editor = contentRef.current;
         if (document.activeElement !== editor) editor.focus();
         const found = window.find(query, false, false, false);
@@ -488,6 +527,27 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
     };
 
     const handleReplace = () => {
+        // 🌸 新增：Markdown 模式下的替换
+        if (isMdMode) {
+            const textarea = mdInputRef.current;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            
+            // 确保当前有选中文本，且选中的正好是我们要找的词
+            if (start !== end && textarea.value.substring(start, end).toLowerCase() === searchQuery.toLowerCase() && searchQuery !== '') {
+                // 拼接替换后的新字符串
+                const newValue = textarea.value.substring(0, start) + replaceQuery + textarea.value.substring(end);
+                textarea.value = newValue; // 强制同步 DOM，防止异步滞后
+                setMdContent(newValue);    // 更新 React 状态
+                
+                textarea.setSelectionRange(start, start + replaceQuery.length);
+                showToast('已替换', 'success');
+            }
+            executeFind(searchQuery); // 替换完自动找下一个
+            return;
+        }
+
+        // 🌸 原有逻辑：富文本模式下的替换
         const editor = contentRef.current;
         if (document.activeElement !== editor) editor.focus();
         const sel = window.getSelection();
@@ -499,6 +559,18 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
 
     const handleReplaceAll = () => {
         if (!searchQuery) return;
+        
+        // 🌸 新增：Markdown 模式下的全部替换
+        if (isMdMode) {
+            const escapedSearch = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'gi');
+            const newValue = mdContent.replace(regex, replaceQuery);
+            setMdContent(newValue);
+            showToast('已完成全部替换', 'success');
+            return;
+        }
+
+        // 🌸 原有逻辑：富文本模式下的全部替换
         const editor = contentRef.current;
         const escapedSearch = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedSearch, 'gi');
@@ -961,7 +1033,8 @@ function EditorView({ onCreatePage, notebook, page, onBack, onSave, onAddCard, s
                     )}
 
                     <div className="w-full max-w-3xl pt-8 md:pt-12 px-4 md:px-10 transition-transform origin-top duration-200 ease-out" style={{ paddingBottom: '65vh', zoom: appZoom }}>
-                        <textarea className={`w-full flex-1 bg-gray-50/50 text-gray-700 font-mono text-sm leading-relaxed p-6 outline-none resize-none custom-scrollbar rounded-xl border border-gray-100 shadow-inner ${isMdMode ? 'block' : 'hidden'}`} value={mdContent} onChange={(e) => setMdContent(e.target.value)} placeholder="在这里编写 Markdown 源码..." style={{ minHeight: '60vh' }} />
+                        {/* 🌸 修改：加入了 ref={mdInputRef} */}
+<textarea ref={mdInputRef} className={`w-full flex-1 bg-gray-50/50 text-gray-700 font-mono text-sm leading-relaxed p-6 outline-none resize-none custom-scrollbar rounded-xl border border-gray-100 shadow-inner ${isMdMode ? 'block' : 'hidden'}`} value={mdContent} onChange={(e) => setMdContent(e.target.value)} placeholder="在这里编写 Markdown 源码..." style={{ minHeight: '60vh' }} />
                         
                         <div ref={contentRef} className={`editor-core editor-wrapper ${isMdMode ? 'hidden' : 'block'}`} contentEditable={!studyMode} onPaste={handlePaste} onInput={() => handleInput(false, false)} onBlur={saveSelection} spellCheck="false" onMouseUp={(e) => { saveSelection(); const sel = window.getSelection().toString().trim(); if (sel && !studyMode) { setSelPop({ x: e.clientX, y: e.clientY, text: sel }); } else { setSelPop(null); } }} onKeyUp={saveSelection}></div>
                         
