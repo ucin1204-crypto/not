@@ -491,14 +491,13 @@ header {
     border-left-color: #a67b72 !important;
 }
 
-/* --- H3: 带樱花标题 --- */
+/* --- H3: 带叶子标题 --- */
 .editor-core h3 { 
     font-size: 1.1em !important; 
     font-weight: 700 !important; 
     color: #B27D72 !important; 
     margin: 1em 0 0.5em !important; 
     padding: 2px 8px !important;
-    background: rgba(185, 136, 125, 0.08) !important; 
     border-radius: 4px !important;
     text-shadow: none !important;
 }
