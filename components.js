@@ -1757,10 +1757,15 @@ function ModalContainer({ config, onClose }) {
                         {config.type === 'createNotebook' && <div><input className="w-full bg-gray-100 rounded-xl px-5 py-3 mb-6 outline-none" placeholder="笔记本名称" value={val1} onChange={e=>setVal1(e.target.value)} autoFocus /><div className="flex justify-center gap-3">{COLORS.map((c, i) => <div key={i} onClick={() => setVal2(i)} className={`w-10 h-10 rounded-full cursor-pointer ${c.bg} border-4 ${val2 === i ? 'border-indigo-500 scale-110' : 'border-white'}`}></div>)}</div></div>}
                     </div>
                 )}
-                <div className="flex gap-4">
-                    <button onClick={onClose} className="flex-1 py-3 text-gray-400 hover:bg-gray-50 rounded-xl font-bold transition">取消</button>
-                    <button onClick={() => { config.onConfirm(val1, val2, val3); onClose(); }} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 transition">确定</button>
-                </div>
+                {/* 🌸 新增：如果是单纯的提示弹窗，只显示一个“我知道了”按钮 */}
+                {config.type === 'alert' ? (
+                    <button onClick={onClose} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 transition">我知道了</button>
+                ) : (
+                    <div className="flex gap-4">
+                        <button onClick={onClose} className="flex-1 py-3 text-gray-400 hover:bg-gray-50 rounded-xl font-bold transition">取消</button>
+                        <button onClick={() => { config.onConfirm(val1, val2, val3); onClose(); }} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 transition">确定</button>
+                    </div>
+                )}
             </div>
         </div>
     );
