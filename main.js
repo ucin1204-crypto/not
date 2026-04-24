@@ -207,10 +207,12 @@ function App() {
                 .upsert({ id: 1, data_json: data, updated_at: new Date().toISOString() });
             
             if (error) throw error;
-            showToast('✨ 云端同步成功！', 'success');
-        } catch (err) {
-            console.error(err);
-            showToast('同步失败: ' + err.message, 'error');
+            /* 🌸 修改：将顶部提示改为需要手动确认的弹窗 */
+                setModal({ type: 'alert', title: '上传成功', msg: '✨ 本地数据已成功备份到云端！' });
+            } catch (err) {
+                console.error(err);
+                /* 🌸 修改：将顶部提示改为需要手动确认的弹窗 */
+                setModal({ type: 'alert', title: '上传失败', msg: '同步失败: ' + err.message });
         } finally {
             setIsSyncing(false);
         }
@@ -248,11 +250,13 @@ function App() {
                     }
                 });
             } else {
-                showToast('云端目前没有数据哦', 'warning');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('拉取失败: ' + err.message, 'error');
+/* 🌸 修改：空数据提示改为需要手动点击的弹窗 */
+                    setModal({ type: 'alert', title: '提示', msg: '云端目前没有备份数据哦' });
+                }
+            } catch (err) {
+                console.error(err);
+                /* 🌸 修改：拉取失败提示改为需要手动点击的弹窗 */
+                setModal({ type: 'alert', title: '拉取失败', msg: '同步失败: ' + err.message });
         } finally {
             setIsSyncing(false);
         }
